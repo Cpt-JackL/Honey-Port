@@ -31,6 +31,11 @@ public class Honey_Port {
      * Version - Identify current program version
      */
     public static final double Version = 0.1;
+    
+    /**
+     * UseColorCode - Display message with color or not
+     */
+    public static boolean UseColorCode = false;
 
     /**
      * DebugLevel - Controls how much debug message is being output and log 0000
@@ -108,19 +113,27 @@ public class Honey_Port {
 
         if ((MsgType >> 4) <= DebugLevel && (MsgType >> 4) != 0x0) {
             // Debug Message
-            System.out.println(C_PURPLE + "[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg + C_RESET);
+            if (UseColorCode) {System.out.print(C_PURPLE);}
+            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg);
+            if (UseColorCode) {System.out.print(C_RESET);}
         } else if (MsgType == 0x0) {
             // Normal Message
             System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " INFO      ]: " + Msg);
         } else if (MsgType == 0x1) {
             // Warning Message
-            System.out.println(C_YELLOW + "[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg + C_RESET);
+            if (UseColorCode) {System.out.print(C_YELLOW);}
+            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg);
+            if (UseColorCode) {System.out.print(C_RESET);}
         } else if (MsgType == 0x2) {
             // Error Message
-            System.out.println(C_RED + "[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg + C_RESET);
+            if (UseColorCode) {System.out.print(C_RED);}
+            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg);
+            if (UseColorCode) {System.out.print(C_RESET);}
         } else if (MsgType == 0x4) {
             // Detection Message
-            System.out.println(C_CYAN + "[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg + C_RESET);
+            if (UseColorCode) {System.out.print(C_CYAN);}
+            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg);
+            if (UseColorCode) {System.out.print(C_RESET);}
             // Log to file if enabled
             if (LogToFile == true) {
                 LogFileWriter.println("[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg);
@@ -141,15 +154,18 @@ public class Honey_Port {
     // Read settings from Settings.conf file
     private static void ReadSettingsFromConf() {
         final String ConfFile = "Settings.conf"; // Setting file location and name
+        PrintMsg((byte) 0x00, "Reading settings from " + ConfFile + "...");
         final Properties ConfPropReader = new Properties();
-        PrintMsg((byte) 0x00, "Reading settings from " + ConfFile + ".");
+        
 
         // Start reading file
         try {
             InputStream FileReader = new FileInputStream(ConfFile);
             ConfPropReader.load(FileReader);
-
+            
             // Start reading data from file
+            UseColorCode = Boolean.parseBoolean(ConfPropReader.getProperty("Program.UseColorCode"));
+            
             // Debug Level
             DebugLevel = Byte.parseByte(ConfPropReader.getProperty("Program.Debug"), 16);
             PrintMsg((byte) 0x10, "Debug Level is set to: " + DebugLevel);
@@ -583,16 +599,18 @@ public class Honey_Port {
      */
     // Main function, entry point of the software
     public static void main(String[] args) {
+        // Read settings from setting file
+        ReadSettingsFromConf();
+        
         // Program information message
+        PrintMsg((byte) 0x00, "-----------------------------------------");
         PrintMsg((byte) 0x00, "Welcome use Honey Port.");
         PrintMsg((byte) 0x00, "Author: Jack L (http://jack-l.com)");
         PrintMsg((byte) 0x00, "Version: " + Version);
         PrintMsg((byte) 0x01, "You are using this program at your own risk.");
         PrintMsg((byte) 0x01, "This program is still under Beta testing stage.");
-
-        // Read settings from setting file
-        ReadSettingsFromConf();
-
+        PrintMsg((byte) 0x00, "-----------------------------------------");
+        
         // Validate current program settings
         ValidateSettings();
 

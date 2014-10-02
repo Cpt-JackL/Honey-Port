@@ -74,6 +74,9 @@ public class Honey_Port {
 
     public static int ExcludedPortsCount = 0;
     public static int[] ExcludedPorts;
+    
+    public static int IPWhiteListCount = 0;
+    public static String [] IPWhiteList;
 
     // Run time variables
     // Time variable
@@ -110,30 +113,31 @@ public class Honey_Port {
         // Get and format current date & time
         CurrentDate = new Date();
         SimpleDateFormat FormatCurrentDate = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        String FormattedMsg;
 
         if ((MsgType >> 4) <= DebugLevel && (MsgType >> 4) != 0x0) {
             // Debug Message
-            if (UseColorCode) {System.out.print(C_PURPLE);}
-            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg);
-            if (UseColorCode) {System.out.print(C_RESET);}
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg;
+            if (UseColorCode) {FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;}
+            System.out.println(FormattedMsg);
         } else if (MsgType == 0x0) {
             // Normal Message
             System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " INFO      ]: " + Msg);
         } else if (MsgType == 0x1) {
             // Warning Message
-            if (UseColorCode) {System.out.print(C_YELLOW);}
-            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg);
-            if (UseColorCode) {System.out.print(C_RESET);}
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg;
+            if (UseColorCode) {FormattedMsg = C_YELLOW + FormattedMsg + C_RESET;}
+            System.out.println(FormattedMsg);
         } else if (MsgType == 0x2) {
             // Error Message
-            if (UseColorCode) {System.out.print(C_RED);}
-            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg);
-            if (UseColorCode) {System.out.print(C_RESET);}
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg;
+            if (UseColorCode) {FormattedMsg = C_RED + FormattedMsg + C_RESET;}
+            System.out.println(FormattedMsg);
         } else if (MsgType == 0x4) {
             // Detection Message
-            if (UseColorCode) {System.out.print(C_CYAN);}
-            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg);
-            if (UseColorCode) {System.out.print(C_RESET);}
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg;
+            if (UseColorCode) {FormattedMsg = C_CYAN + FormattedMsg + C_RESET;}
+            System.out.println(FormattedMsg);
             // Log to file if enabled
             if (LogToFile == true) {
                 LogFileWriter.println("[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg);
@@ -179,6 +183,7 @@ public class Honey_Port {
             PortRangeEnd = Integer.parseInt(ConfPropReader.getProperty("PortRange.End"));
             SpecifiedPortsCount = Integer.parseInt(ConfPropReader.getProperty("SpecPort.Count"));
             ExcludedPortsCount = Integer.parseInt(ConfPropReader.getProperty("ExclPort.Count"));
+            IPWhiteListCount = Integer.parseInt(ConfPropReader.getProperty("IPWhiteList.Count"));
 
             // Read specificed ports if necessary
             if (SpecifiedPortsCount > 0 && SpecifiedPortsCount < 65536) {
@@ -193,6 +198,14 @@ public class Honey_Port {
                 ExcludedPorts = new int[ExcludedPortsCount];
                 for (int Count = 0; Count < ExcludedPortsCount; Count++) {
                     ExcludedPorts[Count] = Integer.parseInt(ConfPropReader.getProperty("ExclPort." + (Count + 1)));
+                }
+            }
+            
+            // Read IP Whitelist if necessary
+            if (IPWhiteListCount > 0) {
+                IPWhiteList = new String[IPWhiteListCount];
+                for (int Count = 0; Count < IPWhiteListCount; Count++) {
+                    IPWhiteList[Count] = ConfPropReader.getProperty("IPWhiteList." + (Count + 1));
                 }
             }
 
@@ -523,9 +536,18 @@ public class Honey_Port {
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
 
             //Execute BAN method
-            if (BanCmd == null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
+            if (BanCmd != null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
+                // Check if IP is in the whitelist
+                for (int Count = 0; Count < IPWhiteListCount; Count++) {
+                    if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
+                        PrintMsg((byte) 0x04, "IP: '" + RemoteIP + ":" + RemotePort + "' is in the whitelist, ignored.");
+                        return; // No need this thread anymore. Exit immediately
+                    }
+                }
+                
                 // Replacing %ip with actual detected IP address
                 String ExeCmd = BanCmd.replaceAll("%ip", RemoteIP);
+                
                 // Execute the command
                 try {
                     Runtime.getRuntime().exec(ExeCmd);

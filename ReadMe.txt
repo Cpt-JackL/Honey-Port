@@ -2,18 +2,37 @@ Honey Port
 Author: Jack L
 Website: http://jack-l.com
 Program written in Java
-YOU ARE USING THIS APPLICATION AT YOUR OWN RISK.
+
+This program is still under Beta testing stage.
+
+--------------------------------
+License
+--------------------------------
+Copyright (C) 2014 Jack L (http://jack-l.com)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ *
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------
 Introduction
 --------------------------------
 This application is designed to prevent attacker/hacker to find out valid open ports on a server.
-This program ONLY detects upon a full-open TCP connection (We took deeply consideration for this, be decided to use full-open instead of half-open mainly to reduce the chance of TCP IP spoofing on the inbound side).
+This application ONLY detects upon a full-open TCP connection (We took deeply consideration for this, be decided to use full-open instead of half-open mainly to reduce the chance of TCP IP spoofing on the inbound side).
 
 It is useful to hide your valid ports inside a port range that is being listened by this application.
 
 Example Scenario:
-A valid SSH port is 22953, you can set this program to listen from 22900 to 23000 and excluding port 22953.
+A valid SSH port is 22953, you can set this application to listen from 22900 to 23000 and excluding port 22953.
 
 We call ports from 22900 to 23000 excluding 22953 the honey ports. This is why the application is called honey port.
 
@@ -24,13 +43,26 @@ A full-open TCP port scanner is likely detect first few open ports and then comp
 However, you must set up this application correctly, especially BanCmd and UnbanCmd. Wrong configuration may result serious problem on your server.
 
 Main Achievement: Reduce SSH/RDP attack on a server by creating honey ports to deflect hacking attempt.
+
 --------------------------------
 System Requirement
 --------------------------------
 Any system that runs Java.
 You will need a firewall the accepts bash/cmd/powershell command to ban an IP automatically.
-Currently only support on IPv4.
+Currently only support on IPv4 and TCP only.
 Tested on: Linux with iptables and Java 1.7.
+
+--------------------------------
+Negative impact
+--------------------------------
+Each listened port required a new thread running. If you are using this program from port 50000 - 59999, then 10000 threads will be created to listen on those ports.
+Also, each new inbound connection (detection) will required a new thread as well, but this thread should be close immediately once the connection is closed or the IP is banned.
+Listening on a big range of ports might have some negative impact to your system.
+
+I tested with 10000 threads on Windows Server 2012 with debug mode, CPU usage was 0% on a 3.70Ghz 8 cores CPU. RAM usage was about 15MB.
+I also tested 10000 threads with Linux, the maximum allowance threads for each program denied this application to create more threads at the end. (I was too lazy to change the limit)
+
+Before you begin, you should check the maximum allowance threads for each process in your OS settings. Reaching maximum threads during runtime will make this program useless.
 
 --------------------------------
 Program Settings

@@ -1,7 +1,23 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (C) 2014 Jack L (http://jack-l.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ *
+ * @author Jack L (http://jack-l.com)
  */
 
 import java.io.*;
@@ -10,10 +26,6 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
-/**
- *
- * @author Jack L (http://jack-l.com)
- */
 public class Honey_Port {
 
     //Console Color Code
@@ -665,9 +677,9 @@ public class Honey_Port {
         // Program information message
         PrintMsg((byte) 0x00, "-----------------------------------------");
         PrintMsg((byte) 0x00, "Welcome use Honey Port.");
-        PrintMsg((byte) 0x00, "Author: Jack L (http://jack-l.com)");
+        PrintMsg((byte) 0x00, "Original Author: Jack L (http://jack-l.com)");
         PrintMsg((byte) 0x00, "Version: " + Version);
-        PrintMsg((byte) 0x01, "You are using this program at your own risk.");
+        PrintMsg((byte) 0x01, "This program is released under GNU General Public License v3");
         PrintMsg((byte) 0x01, "This program is still under Beta testing stage.");
         PrintMsg((byte) 0x00, "-----------------------------------------");
 

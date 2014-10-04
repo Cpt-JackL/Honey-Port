@@ -44,6 +44,28 @@ public class Queue<D> {
         return Head.Data;
     }
 
+    public boolean Search_Queue(String Data) {
+        // Empty Queue
+        if (isEmpty()) {
+            return false;
+        }
+
+        // String comparison only
+        QueueLL CurrentPos = Head;
+        while (CurrentPos != null) {
+            //See if there is a match
+            String CurrentData = CurrentPos.Data.toString();
+            if (CurrentData.equalsIgnoreCase(Data)) {
+                return true;
+            }
+
+            //Continue search
+            CurrentPos = CurrentPos.Next;
+        }
+
+        return false;
+    }
+
     public boolean isEmpty() {
         if (Head == null || Tail == null) {
             return true;

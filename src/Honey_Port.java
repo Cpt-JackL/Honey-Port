@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 
 /**
  *
@@ -31,7 +32,7 @@ public class Honey_Port {
      * Version - Identify current program version
      */
     public static final double Version = 0.1;
-    
+
     /**
      * UseColorCode - Display message with color or not
      */
@@ -74,9 +75,9 @@ public class Honey_Port {
 
     public static int ExcludedPortsCount = 0;
     public static int[] ExcludedPorts;
-    
+
     public static int IPWhiteListCount = 0;
-    public static String [] IPWhiteList;
+    public static String[] IPWhiteList;
 
     // Run time variables
     // Time variable
@@ -87,6 +88,8 @@ public class Honey_Port {
     private static Thread[] PortsListenerThreads;
     private static ServerSocket[] PortSockets;
     private static int[] ThreadPortNum;
+    //
+    private static Semaphore BanMutex = new Semaphore(1);
     //
     private static int TotalPortsCount;
     private static int DetectionCount = 0;
@@ -118,7 +121,9 @@ public class Honey_Port {
         if ((MsgType >> 4) <= DebugLevel && (MsgType >> 4) != 0x0) {
             // Debug Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg;
-            if (UseColorCode) {FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;}
+            if (UseColorCode) {
+                FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;
+            }
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x0) {
             // Normal Message
@@ -126,17 +131,23 @@ public class Honey_Port {
         } else if (MsgType == 0x1) {
             // Warning Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg;
-            if (UseColorCode) {FormattedMsg = C_YELLOW + FormattedMsg + C_RESET;}
+            if (UseColorCode) {
+                FormattedMsg = C_YELLOW + FormattedMsg + C_RESET;
+            }
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x2) {
             // Error Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg;
-            if (UseColorCode) {FormattedMsg = C_RED + FormattedMsg + C_RESET;}
+            if (UseColorCode) {
+                FormattedMsg = C_RED + FormattedMsg + C_RESET;
+            }
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x4) {
             // Detection Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg;
-            if (UseColorCode) {FormattedMsg = C_CYAN + FormattedMsg + C_RESET;}
+            if (UseColorCode) {
+                FormattedMsg = C_CYAN + FormattedMsg + C_RESET;
+            }
             System.out.println(FormattedMsg);
             // Log to file if enabled
             if (LogToFile == true) {
@@ -160,16 +171,15 @@ public class Honey_Port {
         final String ConfFile = "Settings.conf"; // Setting file location and name
         PrintMsg((byte) 0x00, "Reading settings from " + ConfFile + "...");
         final Properties ConfPropReader = new Properties();
-        
 
         // Start reading file
         try {
             InputStream FileReader = new FileInputStream(ConfFile);
             ConfPropReader.load(FileReader);
-            
+
             // Start reading data from file
             UseColorCode = Boolean.parseBoolean(ConfPropReader.getProperty("Program.UseColorCode"));
-            
+
             // Debug Level
             DebugLevel = Byte.parseByte(ConfPropReader.getProperty("Program.Debug"), 16);
             PrintMsg((byte) 0x10, "Debug Level is set to: " + DebugLevel);
@@ -200,7 +210,7 @@ public class Honey_Port {
                     ExcludedPorts[Count] = Integer.parseInt(ConfPropReader.getProperty("ExclPort." + (Count + 1)));
                 }
             }
-            
+
             // Read IP Whitelist if necessary
             if (IPWhiteListCount > 0) {
                 IPWhiteList = new String[IPWhiteListCount];
@@ -535,36 +545,64 @@ public class Honey_Port {
             DetectionCount++;
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
 
-            //Execute BAN method
-            if (BanCmd != null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
-                // Check if IP is in the whitelist
-                for (int Count = 0; Count < IPWhiteListCount; Count++) {
-                    if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
-                        PrintMsg((byte) 0x04, "IP: '" + RemoteIP + ":" + RemotePort + "' is in the whitelist, ignored.");
-                        return; // No need this thread anymore. Exit immediately
-                    }
+            // Add IP to firewall (execute cmd)
+            ExecuteBanCmd(RemoteIP);
+        }
+    }
+
+    private static void ExecuteBanCmd(String RemoteIP) {
+        //Check whitelist
+        if (BanCmd != null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
+            for (int Count = 0; Count < IPWhiteListCount; Count++) {
+                if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
+                    PrintMsg((byte) 0x04, "IP: '" + RemoteIP + "' is in the whitelist, ignored.");
+                    return; // No need this thread anymore. Exit immediately
                 }
-                
-                // Replacing %ip with actual detected IP address
-                String ExeCmd = BanCmd.replaceAll("%ip", RemoteIP);
-                
-                // Execute the command
-                try {
-                    Runtime.getRuntime().exec(ExeCmd);
-                    PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
-                    // Put this IP address to queue list if unban is enabled
-                    if (BannedIP != null) {
-                        // Calc expire time
-                        CurrentDate = new Date();
-                        BannedIPData NewIP = new BannedIPData(RemoteIP, CurrentDate.getTime() + BanLength * 1000);
-                        // Put it to ban list
-                        BannedIP.En_Queue(NewIP);
-                    }
-                } catch (Exception e) {
-                    PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
-                    PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            }
+        }
+
+        // Replacing %ip with actual detected IP address
+        String ExeCmd = BanCmd.replaceAll("%ip", RemoteIP);
+
+        // Prepare to execute command, only one execution at a time
+        boolean Retry = true;
+        while (Retry) {
+            Retry = false;
+
+            try {
+                //Get Mutex
+                BanMutex.acquire();
+
+                // Check banlist, make sure no dulicate bans
+                if (BannedIP.Search_Queue(RemoteIP)) {
+                    PrintMsg((byte) 0x20, "IP '" + RemoteIP + "' is already in the banned list.");
+                    return;
                 }
 
+                // Executing cmd here.
+                Runtime.getRuntime().exec(ExeCmd);
+                PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
+
+                // Put this IP address to queue list if unban is enabled
+                if (BannedIP != null) {
+                    // Calc expire time
+                    CurrentDate = new Date();
+                    BannedIPData NewIP = new BannedIPData(RemoteIP, CurrentDate.getTime() + BanLength * 1000);
+                    // Put it to ban list
+                    BannedIP.En_Queue(NewIP);
+                }
+            } catch (InterruptedException e) {
+                PrintMsg((byte) 0x20, "Mutex locked: " + e + "\nRetry in 1 seconds...");
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e1) {
+                }
+                Retry = true;
+            } catch (Exception e) {
+                PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
+                PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            } finally {
+                BanMutex.release();
             }
         }
     }
@@ -623,7 +661,7 @@ public class Honey_Port {
     public static void main(String[] args) {
         // Read settings from setting file
         ReadSettingsFromConf();
-        
+
         // Program information message
         PrintMsg((byte) 0x00, "-----------------------------------------");
         PrintMsg((byte) 0x00, "Welcome use Honey Port.");
@@ -632,7 +670,7 @@ public class Honey_Port {
         PrintMsg((byte) 0x01, "You are using this program at your own risk.");
         PrintMsg((byte) 0x01, "This program is still under Beta testing stage.");
         PrintMsg((byte) 0x00, "-----------------------------------------");
-        
+
         // Validate current program settings
         ValidateSettings();
 

@@ -17,4 +17,9 @@ public class BannedIPData {
         IPAddr = InIP;
         ExpireTime = ExpTime;
     }
+
+    @Override
+    public String toString() {
+        return IPAddr;
+    }
 }

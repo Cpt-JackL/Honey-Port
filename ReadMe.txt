@@ -5,6 +5,8 @@ Program written in Java
 
 This program is still under Beta testing stage.
 
+To run the compiled program, use "java -jar Honey_Port.jar"
+
 --------------------------------
 License
 --------------------------------
@@ -45,15 +47,16 @@ However, you must set up this application correctly, especially BanCmd and Unban
 Main Achievement: Reduce SSH/RDP attack on a server by creating honey ports to deflect hacking attempt.
 
 --------------------------------
-System Requirement
+System Requirements
 --------------------------------
 Any system that runs Java.
-You will need a firewall the accepts bash/cmd/powershell command to ban an IP automatically.
+You must allow traffic go throguh for ports that are listening by this program, otherwise it would be useless.
+You will need a firewall the accepts bash/cmd/powershell command to ban an IP automatically. (I personally tested with iptables and Windows Firewall, both of them works)
 Currently only support on IPv4 and TCP only.
 Tested on: Linux with iptables and Java 1.7.
 
 --------------------------------
-Negative impact
+Negative impacts
 --------------------------------
 Each listened port required a new thread running. If you are using this program from port 50000 - 59999, then 10000 threads will be created to listen on those ports.
 Also, each new inbound connection (detection) will required a new thread as well, but this thread should be close immediately once the connection is closed or the IP is banned.
@@ -93,9 +96,12 @@ Use OFF or leave it empty to disable this feature
 WARNING:
 * Incorrect setting of this variable might result serious problem on your server
 * User that running this application must have privilege to execute the command, otherwise it will not work.
+
 Example:
 For Linux with iptables, you should use:
 General.BanCmd=iptables -A INPUT -s %ip -j DROP
+For Windows with Windows Firewall, you should use:
+General.BanCmd=PowerShell New-NetFirewallRule -DisplayName "Honey_Port_%ip" -Direction Inbound -Action Block -RemoteAddress %ip
 %ip will be replaced with detected IP on a detection
 
 General.UnbanCmd - Command to execute when a ban time is expired
@@ -104,9 +110,12 @@ Use OFF or leave it empty to disable this feature
 WARNING:
 * Incorrect setting of this variable might result serious problem on your server
 * User that running this application must have privilege to execute the command, otherwise it will not work.
+
 Example:
 For Linux with iptables, you should use:
 General.UnbanCmd=iptables -D INPUT -s %ip -j DROP
+For Windows with Windows Firewall, you should use:
+General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
 %ip will be replaced with detected IP on a detection
 
 ---Port range listening specifications---
@@ -161,6 +170,49 @@ IPWhiteList.1=127.0.0.1
 IPWhiteList.2=192.168.0.1
 You can add more by using "IPWhiteList.3", "IPWhiteList.4"... You can add as many up to the number you specified in "IPWhiteList.Count". The number in between must be continuous.
 It is strongly suggested to keep 127.0.0.1 and the external IP address for the current machine inside this list.
+
+--------------------------------
+An example of a Settings.conf file
+--------------------------------
+# Control addition debug message from the program (0-2)
+Program.Debug=1
+# Keep the following false if using Windows, you may set it to true if using Linux
+Program.UseColorCode=False
+# Log detection to file or not
+Program.LogToFile=True
+
+# Enable the following lines by removing '#' at the front if running on a Windows machine with Windows Firewall
+# General.BanCmd=PowerShell New-NetFirewallRule -DisplayName "Honey_Port_%ip" -Direction Inbound -Action Block -RemoteAddress %ip
+# General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
+
+# Enable the following lines by removing '#' at the front if running on a Linux machine with iptables
+# General.BanCmd=iptables -A INPUT -s %ip -j DROP
+# General.UnbanCmd=iptables -D INPUT -s %ip -j DROP
+
+# Enable the following lines by removing '#' at the front if you do not want to use ban features
+# General.BanCmd=OFF
+# General.UnbanCmd=OFF
+
+# For 3rd party firewall, please setup the commands according to your firewall guide
+
+# Ban length in seconds (Use 0 to disable unban)
+General.BanLength=3600
+
+# Port range to use as honey ports
+PortRange.Start=60000
+PortRange.End=60010
+
+# Other ports other than included in honey port to be use as honey ports
+SpecPort.Count=0
+SpecPort.1=0
+
+# Excluding ports from being use as a honey port
+ExclPort.Count=0
+ExclPort.1=0
+
+# IP whitelist, BanCmd and UnbanCmd will not be execute on those IPs.
+IPWhiteList.Count=1
+IPWhiteList.1 = 127.0.0.1
 
 --------------------------------
 Run time commands

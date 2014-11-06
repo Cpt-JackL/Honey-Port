@@ -244,7 +244,7 @@ public class Honey_Port {
                 // Get and format current date & time
                 SimpleDateFormat FormatCurrentDate = new SimpleDateFormat("yyyy_MM_dd");
 
-                LogFileWriter = new PrintWriter(new FileOutputStream(new File("Log_" + FormatCurrentDate.format(CurrentDate) + ".log"), true));
+                LogFileWriter = new PrintWriter(new FileOutputStream(new File("Log_" + FormatCurrentDate.format(CurrentDate) + ".log"), true), true);
             }
         } catch (FileNotFoundException e) {
             PrintMsg((byte) 0x02, "Conf file '" + ConfFile + "' not found!");
@@ -592,8 +592,8 @@ public class Honey_Port {
                 }
 
                 // Executing cmd here.
-                Runtime.getRuntime().exec(ExeCmd);
                 PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
+                Runtime.getRuntime().exec(ExeCmd);
 
                 // Put this IP address to queue list if unban is enabled
                 if (BannedIP != null) {
@@ -640,21 +640,12 @@ public class Honey_Port {
                         BannedIPData IPData = (BannedIPData) BannedIP.Peak_Queue();
                         if (IPData.ExpireTime <= CurrentDate.getTime()) { // Expired
                             PrintMsg((byte) 0x00, "IP '" + IPData.IPAddr + "' ban time has expired.");
-                            BannedIP.De_Queue(); //Remove from Queue
-                            // Replacing %ip with actual IP address
-                            String ExeCmd = UnbanCmd.replaceAll("%ip", IPData.IPAddr);
-                            try {
-                                Runtime.getRuntime().exec(ExeCmd);
-                                PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
-                            } catch (Exception e) {
-                                PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
-                                PrintMsg((byte) 0x20, "Exception Detail: " + e);
-                            }
+                            ExeUnbanCmd((BannedIPData) BannedIP.De_Queue()); //Unban
                         } else {
-                            Thread.sleep(5000); // Check only once every 5 seconds
+                            Thread.sleep(1000); // Check only once every 1 seconds
                         }
                     } else {
-                        Thread.sleep(5000); // Check only once every 5 seconds
+                        Thread.sleep(1000); // Check only once every 1 seconds
                     }
                 } catch (Exception e) {
                     PrintMsg((byte) 0x10, "Exception caight while removing expired IP from Queue.");
@@ -664,6 +655,42 @@ public class Honey_Port {
         }
     }
 
+    /**
+     * ********************************************************************
+     * Remove all banned IPs on shutdown
+     * ********************************************************************
+     * Only works if:
+     * 1. UnbanCMD is setup correctly
+     * 2. BanLength > 0
+     */
+    public static void UnbanAllUponShutdown() {
+        if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
+            PrintMsg((byte) 0x00, "Removing all banned IPs...");
+            //Unban all until empty
+            while (!BannedIP.isEmpty()) {
+                ExeUnbanCmd((BannedIPData) BannedIP.De_Queue());
+            }
+            PrintMsg((byte) 0x00, "All banned IPs are removed.");
+        }
+    }
+    
+    /**
+     * ********************************************************************
+     * Execute unban command
+     * ********************************************************************
+     */
+    private static void ExeUnbanCmd(BannedIPData IPData) {
+        //Convert %ip to actual ip address
+        String ExeCmd = UnbanCmd.replaceAll("%ip", IPData.IPAddr);
+        try {
+            PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
+            Runtime.getRuntime().exec(ExeCmd);
+        } catch (Exception e) {
+            PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
+            PrintMsg((byte) 0x20, "Exception Detail: " + e);
+        }
+    }
+    
     /**
      * ********************************************************************
      * Main function
@@ -695,6 +722,9 @@ public class Honey_Port {
         // Issue exit signal
         ShutdownAllThreads();
 
+        //Remove all banned IPs (Only works if UnbanCMD is being setup correctly and BanLength > 0)
+        UnbanAllUponShutdown();
+        
         // Exiting message
         PrintMsg((byte) 0x00, "Total of " + DetectionCount + " connection caught during program uptime.");
         PrintMsg((byte) 0x00, "Exiting main program...");

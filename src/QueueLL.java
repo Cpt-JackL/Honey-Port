@@ -25,9 +25,11 @@ public class QueueLL<D> {
 
     protected D Data;
     protected QueueLL Next;
+    protected QueueLL Prev;
 
-    public QueueLL(D Data, QueueLL Next) { //Constructor
+    public QueueLL(D Data, QueueLL Next, QueueLL Prev) { //Constructor
         this.Data = Data;
         this.Next = Next;
+        this.Prev = Prev;
     }
 }

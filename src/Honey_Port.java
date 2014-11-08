@@ -59,7 +59,7 @@ public class Honey_Port {
     /**
      * Variable: LogToFile - Log detections to file
      */
-    public static boolean LogToFile = false;
+    public static Byte LogLevel = 0x0; //Default must be off
 
     /**
      * Variable: BanCmd - Command to execute during a detection Use OFF to
@@ -133,41 +133,97 @@ public class Honey_Port {
         if ((MsgType >> 4) <= DebugLevel && (MsgType >> 4) != 0x0) {
             // Debug Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x8) == 0x8) {
+                LogFileWriter.println(FormattedMsg);
+            }
+            
+            // Add color
             if (UseColorCode) {
                 FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;
             }
+            
+            // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x0) {
             // Normal Message
-            System.out.println("[" + FormatCurrentDate.format(CurrentDate) + " INFO      ]: " + Msg);
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " INFO      ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x1) == 0x1) {
+                LogFileWriter.println(FormattedMsg);
+            }
+            
+            // Print
+            System.out.println(FormattedMsg);
         } else if (MsgType == 0x1) {
             // Warning Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x2) == 0x2) {
+                LogFileWriter.println(FormattedMsg);
+            }
+            
+            // Add color
             if (UseColorCode) {
                 FormattedMsg = C_YELLOW + FormattedMsg + C_RESET;
             }
+            
+            // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x2) {
             // Error Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x4) == 0x4) {
+                LogFileWriter.println(FormattedMsg);
+            }
+            
+            // Add color
             if (UseColorCode) {
                 FormattedMsg = C_RED + FormattedMsg + C_RESET;
             }
+            
+            // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x4) {
             // Detection Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x10) == 0x10) {
+                LogFileWriter.println(FormattedMsg);
+            }
+            
+            // Add color
             if (UseColorCode) {
                 FormattedMsg = C_CYAN + FormattedMsg + C_RESET;
             }
+            
+            // Print
             System.out.println(FormattedMsg);
-            // Log to file if enabled
-            if (LogToFile == true) {
-                LogFileWriter.println("[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg);
+        } else if (MsgType == 0x5) {
+            // Banned message
+            FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " BAN/UNBAN ]: " + Msg;
+            
+            // Check if logging is required
+            if ((LogLevel & 0x20) == 0x20) {
+                LogFileWriter.println(FormattedMsg);
             }
+            
+            // Add color
+            if (UseColorCode) {
+                FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;
+            }
+            
+            // Print
+            System.out.println(FormattedMsg);
         }
     }
-
+    
     // Check if a port number is valid or not
     public static boolean ValidatePortNum(int PortNum) {
         return PortNum <= 65535 && PortNum >= 1;
@@ -190,14 +246,30 @@ public class Honey_Port {
             ConfPropReader.load(FileReader);
 
             // Start reading data from file
+            
+            // Log level (must be calidate and create file here)
+            Byte TempLogLevel = Byte.parseByte(ConfPropReader.getProperty("Program.LogLevel"), 16);
+            // Validate
+            if (TempLogLevel < 0x0 || TempLogLevel >= 0x40) {
+                PrintMsg((byte) 0x02, "Invalid 'LogLevel' input. Valid range is 0x0 - 0x3F.");
+                System.exit(-1);
+            }
+            // Create file writer here
+            if (TempLogLevel > 0x0) {
+                // Get and format current date & time
+                SimpleDateFormat FormatCurrentDate = new SimpleDateFormat("yyyy_MM_dd");
+                LogFileWriter = new PrintWriter(new FileOutputStream(new File("Log_" + FormatCurrentDate.format(CurrentDate) + ".log"), true), true);
+            }
+            LogLevel = TempLogLevel; // Apply only when file is created and ready.
+            
+            // Color code
             UseColorCode = Boolean.parseBoolean(ConfPropReader.getProperty("Program.UseColorCode"));
 
             // Debug Level
             DebugLevel = Byte.parseByte(ConfPropReader.getProperty("Program.Debug"), 16);
             PrintMsg((byte) 0x10, "Debug Level is set to: " + DebugLevel);
-
+            
             //Other settings
-            LogToFile = Boolean.parseBoolean(ConfPropReader.getProperty("Program.LogToFile"));
             BanCmd = ConfPropReader.getProperty("General.BanCmd");
             UnbanCmd = ConfPropReader.getProperty("General.UnbanCmd");
             BanLength = Integer.parseInt(ConfPropReader.getProperty("General.BanLength"));
@@ -238,20 +310,12 @@ public class Honey_Port {
                 // Start exp checker
                 new Thread(new UnbanTimeExpChecker()).start();
             }
-
-            // Set variables for log writer if necessary
-            if (LogToFile == true) {
-                // Get and format current date & time
-                SimpleDateFormat FormatCurrentDate = new SimpleDateFormat("yyyy_MM_dd");
-
-                LogFileWriter = new PrintWriter(new FileOutputStream(new File("Log_" + FormatCurrentDate.format(CurrentDate) + ".log"), true), true);
-            }
         } catch (FileNotFoundException e) {
             PrintMsg((byte) 0x02, "Conf file '" + ConfFile + "' not found!");
             System.exit(-1);
         } catch (Exception e) {
             PrintMsg((byte) 0x02, "Failed to read '" + ConfFile + "'!");
-            PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            PrintMsg((byte) 0x02, "Exception Detail: " + e);
             System.exit(-1);
         }
     }
@@ -354,8 +418,11 @@ public class Honey_Port {
         for (int Count = 0; Count < TotalPortsCount; Count++) {
             try {
                 PortSockets[Count].close();
+            } catch (NullPointerException e) {
+                // We do not care about null pointer exception.
+                // This exception will occurs if the port failed to create (bind) or being shutted during runtime with !s command.
             } catch (Exception e) {
-                PrintMsg((byte) 0x10, "Exception caught while shuttdown port.");
+                PrintMsg((byte) 0x10, "Exception caught while shuttdown port. Port ID: " + Count);
                 PrintMsg((byte) 0x20, "Exception Detail: " + e);
             }
         }
@@ -366,7 +433,7 @@ public class Honey_Port {
                     PortsListenerThreads[Count].join();
                 }
             } catch (Exception e) {
-                PrintMsg((byte) 0x10, "Exception caught while shuttdown ports.");
+                PrintMsg((byte) 0x10, "Exception caught while waiting threads to close. Thread ID: " + Count);
                 PrintMsg((byte) 0x20, "Exception Detail: " + e);
             }
         }
@@ -557,19 +624,22 @@ public class Honey_Port {
             DetectionCount++;
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
 
-            // Add IP to firewall (execute cmd)
+            // Add IP to firewall (execute cmd), print message and log also inside this function
             ExecuteBanCmd(RemoteIP);
         }
     }
 
     private static void ExecuteBanCmd(String RemoteIP) {
+        //Check valid ban settings
+        if (BanCmd == null || BanCmd.isEmpty() || BanCmd.equalsIgnoreCase("OFF")) {
+            return;
+        }
+        
         //Check whitelist
-        if (BanCmd != null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
-            for (int Count = 0; Count < IPWhiteListCount; Count++) {
-                if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
-                    PrintMsg((byte) 0x04, "IP: '" + RemoteIP + "' is in the whitelist, ignored.");
-                    return; // No need this thread anymore. Exit immediately
-                }
+        for (int Count = 0; Count < IPWhiteListCount; Count++) {
+            if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
+                PrintMsg((byte) 0x04, "IP: '" + RemoteIP + "' is in the whitelist, ignored.");
+                return; // No need this thread anymore. Exit immediately
             }
         }
 
@@ -586,7 +656,7 @@ public class Honey_Port {
                 BanMutex.acquire();
 
                 // Check banlist, make sure no dulicate bans
-                if (BannedIP.Search_Queue(RemoteIP)) {
+                if (BannedIP.Search_Queue_Backward(RemoteIP)) {
                     PrintMsg((byte) 0x20, "IP '" + RemoteIP + "' is already in the banned list.");
                     return;
                 }
@@ -594,6 +664,7 @@ public class Honey_Port {
                 // Executing cmd here.
                 PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
                 Runtime.getRuntime().exec(ExeCmd);
+                PrintMsg((byte) 0x05, "Banned IP: " + RemoteIP);
 
                 // Put this IP address to queue list if unban is enabled
                 if (BannedIP != null) {
@@ -685,6 +756,7 @@ public class Honey_Port {
         try {
             PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
             Runtime.getRuntime().exec(ExeCmd);
+            PrintMsg((byte) 0x05, "Unbanned IP: " + IPData.IPAddr);
         } catch (Exception e) {
             PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
             PrintMsg((byte) 0x20, "Exception Detail: " + e);

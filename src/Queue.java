@@ -32,10 +32,10 @@ public class Queue<D> {
 
     public void En_Queue(D Data) { //enqueue
         if (isEmpty()) { //empty queue
-            Head = new QueueLL(Data, null);
+            Head = new QueueLL(Data, null, null);
             Tail = Head;
         } else { //Non empty queue add to the back of the queue
-            Tail.Next = new QueueLL(Data, null);
+            Tail.Next = new QueueLL(Data, null, Tail);
             Tail = Tail.Next;
         }
     }
@@ -47,6 +47,7 @@ public class Queue<D> {
             Tail = null;
         } else { //Otherwise...
             Head = Head.Next; //Move head to the next node
+            Head.Prev = null;
         }
         return ReturnData; //Return the record
     }
@@ -57,11 +58,6 @@ public class Queue<D> {
     }
 
     public boolean Search_Queue(String Data) {
-        // Empty Queue
-        if (isEmpty()) {
-            return false;
-        }
-
         // String comparison only
         QueueLL CurrentPos = Head;
         while (CurrentPos != null) {
@@ -73,6 +69,23 @@ public class Queue<D> {
 
             //Continue search
             CurrentPos = CurrentPos.Next;
+        }
+
+        return false;
+    }
+    
+    public boolean Search_Queue_Backward(String Data) {
+        // String comparison only
+        QueueLL CurrentPos = Tail;
+        while (CurrentPos != null) {
+            //See if there is a match
+            String CurrentData = CurrentPos.Data.toString();
+            if (CurrentData.equalsIgnoreCase(Data)) {
+                return true;
+            }
+
+            //Continue search
+            CurrentPos = CurrentPos.Prev;
         }
 
         return false;

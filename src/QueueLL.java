@@ -19,7 +19,6 @@
  *
  * @author Jack L (http://jack-l.com)
  */
-
 //Queue linked list
 public class QueueLL<D> {
 

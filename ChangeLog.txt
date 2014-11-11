@@ -1,14 +1,21 @@
 ----------------------------------------
+Version: 0.1.7.1
+----------------------------------------
+Minor Refactoring.
+
+----------------------------------------
 Version: 0.1.7
 ----------------------------------------
 Added:
-1. New message category: BAN/UNBAN
+1. New message category: BAN/UNBAN.
 
 Enhanced:
-1. Logging system.
+1. Logging system by adding selective logging categories.
+2. Search banned list algorithm.
 
 Fixed:
-1. Unnecessary exception message during shutdown for ports that were closed during run time.
+1. Nullpointer exception if "General.BanCmd" is not being set-up correctly.
+2. Unnecessary exception message during shutdown for ports that were closed during run time.
 
 Configuration file removed "Program.LogToFile" and added "Program.LogLevel". Please use the read me file to set-up this variable.
 ----------------------------------------
@@ -45,7 +52,7 @@ Fixed:
 Version: 0.1.3
 ----------------------------------------
 Added:
-1. Support for IP white list
+1. Support for IP white list.
 
 Fixed:
 1. Race condition causing color code not being display correctly.

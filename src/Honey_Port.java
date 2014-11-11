@@ -19,7 +19,6 @@
  *
  * @author Jack L (http://jack-l.com)
  */
-
 import java.io.*;
 import java.net.*;
 import java.text.*;
@@ -96,26 +95,27 @@ public class Honey_Port {
     public static Date CurrentDate = new Date();
     // Shutdown signal for threads
     private static boolean Shutdown = false;
+    // Threads controller variables
     // The following three variables should have the same index as primary key.
-    private static Thread[] PortsListenerThreads;
-    private static ServerSocket[] PortSockets;
-    private static int[] ThreadPortNum;
-    //
+    private static Thread[] PortsListenerThreads; // Use to start thread and stop thread
+    private static ServerSocket[] PortSockets; // This is used to send shutdown signal to the listening socket
+    private static int[] ThreadPortNum; // Keep track what is the port number for this thread
+    // Mutex for bans - Usually not gonna happen
     private static Semaphore BanMutex = new Semaphore(1);
-    //
+    // Counters
     private static int TotalPortsCount;
     private static int DetectionCount = 0;
-    // Log file writer
-    private static PrintWriter LogFileWriter;
     // Queue for banned IPs
     private static Queue BannedIP;
+    // Log file writer
+    private static PrintWriter LogFileWriter;
 
-    /**
+    /*
      * ********************************************************************
-     * General Functions
+     * Message and Log controllers
      * ********************************************************************
      */
-    /**
+    /*
      * Function: PrintMsg - Display message to user console
      *
      * @param MsgType - Type of Message 0000_0000 (0x0) - Normal Message
@@ -133,105 +133,105 @@ public class Honey_Port {
         if ((MsgType >> 4) <= DebugLevel && (MsgType >> 4) != 0x0) {
             // Debug Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DEBUG" + (MsgType >> 4) + "    ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x8) == 0x8) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Add color
             if (UseColorCode) {
                 FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x0) {
             // Normal Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " INFO      ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x1) == 0x1) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x1) {
             // Warning Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " WARNING   ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x2) == 0x2) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Add color
             if (UseColorCode) {
                 FormattedMsg = C_YELLOW + FormattedMsg + C_RESET;
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x2) {
             // Error Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " ERROR     ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x4) == 0x4) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Add color
             if (UseColorCode) {
                 FormattedMsg = C_RED + FormattedMsg + C_RESET;
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x4) {
             // Detection Message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " DETECTION ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x10) == 0x10) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Add color
             if (UseColorCode) {
                 FormattedMsg = C_CYAN + FormattedMsg + C_RESET;
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         } else if (MsgType == 0x5) {
             // Banned message
             FormattedMsg = "[" + FormatCurrentDate.format(CurrentDate) + " BAN/UNBAN ]: " + Msg;
-            
+
             // Check if logging is required
             if ((LogLevel & 0x20) == 0x20) {
-                LogFileWriter.println(FormattedMsg);
+                WriteLog(FormattedMsg);
             }
-            
+
             // Add color
             if (UseColorCode) {
                 FormattedMsg = C_PURPLE + FormattedMsg + C_RESET;
             }
-            
+
             // Print
             System.out.println(FormattedMsg);
         }
     }
-    
-    // Check if a port number is valid or not
-    public static boolean ValidatePortNum(int PortNum) {
-        return PortNum <= 65535 && PortNum >= 1;
+
+    // Write log handler
+    public static void WriteLog(String FormattedMsg) {
+        LogFileWriter.println(FormattedMsg);
     }
 
-    /**
+    /*
      * ********************************************************************
-     * Program Settings
+     * Read program settings from file and validate
      * ********************************************************************
      */
     // Read settings from Settings.conf file
@@ -246,8 +246,7 @@ public class Honey_Port {
             ConfPropReader.load(FileReader);
 
             // Start reading data from file
-            
-            // Log level (must be calidate and create file here)
+            // Log level (must be validate and create file here)
             Byte TempLogLevel = Byte.parseByte(ConfPropReader.getProperty("Program.LogLevel"), 16);
             // Validate
             if (TempLogLevel < 0x0 || TempLogLevel >= 0x40) {
@@ -261,14 +260,14 @@ public class Honey_Port {
                 LogFileWriter = new PrintWriter(new FileOutputStream(new File("Log_" + FormatCurrentDate.format(CurrentDate) + ".log"), true), true);
             }
             LogLevel = TempLogLevel; // Apply only when file is created and ready.
-            
+
             // Color code
             UseColorCode = Boolean.parseBoolean(ConfPropReader.getProperty("Program.UseColorCode"));
 
             // Debug Level
             DebugLevel = Byte.parseByte(ConfPropReader.getProperty("Program.Debug"), 16);
             PrintMsg((byte) 0x10, "Debug Level is set to: " + DebugLevel);
-            
+
             //Other settings
             BanCmd = ConfPropReader.getProperty("General.BanCmd");
             UnbanCmd = ConfPropReader.getProperty("General.UnbanCmd");
@@ -355,7 +354,12 @@ public class Honey_Port {
         }
     }
 
-    /**
+    // Check if a port number is valid or not
+    public static boolean ValidatePortNum(int PortNum) {
+        return PortNum <= 65535 && PortNum >= 1;
+    }
+
+    /*
      * ********************************************************************
      * Keyboard input handlers
      * ********************************************************************
@@ -409,41 +413,9 @@ public class Honey_Port {
         PrintMsg((byte) 0x02, "Port " + PortNum + " is not being listened by this application.");
     }
 
-    // Shutdown all threads created by this program
-    private static void ShutdownAllThreads() {
-        PrintMsg((byte) 0x00, "Trying to shutdown all threads...");
-        PrintMsg((byte) 0x00, "Shutting down threads might take a while. Use TaskMgr to end the program if it does not respond for 5 minutes.");
-        Shutdown = true;
-        // Send socket close signal
-        for (int Count = 0; Count < TotalPortsCount; Count++) {
-            try {
-                PortSockets[Count].close();
-            } catch (NullPointerException e) {
-                // We do not care about null pointer exception.
-                // This exception will occurs if the port failed to create (bind) or being shutted during runtime with !s command.
-            } catch (Exception e) {
-                PrintMsg((byte) 0x10, "Exception caught while shuttdown port. Port ID: " + Count);
-                PrintMsg((byte) 0x20, "Exception Detail: " + e);
-            }
-        }
-        // Verify all threads are off by using join
-        for (int Count = 0; Count < TotalPortsCount; Count++) {
-            try {
-                if (PortsListenerThreads[Count].isAlive() != false) {
-                    PortsListenerThreads[Count].join();
-                }
-            } catch (Exception e) {
-                PrintMsg((byte) 0x10, "Exception caught while waiting threads to close. Thread ID: " + Count);
-                PrintMsg((byte) 0x20, "Exception Detail: " + e);
-            }
-        }
-        //
-        PrintMsg((byte) 0x00, "All listening ports are closed.");
-    }
-
-    /**
+    /*
      * ********************************************************************
-     * Port Handler functions
+     * Creating ports, start listening and accepting connection (detection)
      * ********************************************************************
      */
     // Create listening ports
@@ -624,17 +596,59 @@ public class Honey_Port {
             DetectionCount++;
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
 
-            // Add IP to firewall (execute cmd), print message and log also inside this function
+            // Add IP to firewall (execute cmd)
             ExecuteBanCmd(RemoteIP);
         }
     }
 
+    /*
+     * ********************************************************************
+     * Unban time expiration checker
+     * ********************************************************************
+     */
+    static class UnbanTimeExpChecker implements Runnable {
+
+        public UnbanTimeExpChecker() {
+        }
+
+        @Override
+        public void run() {
+            while (Shutdown != true) {
+                try {
+                    if (!BannedIP.isEmpty()) {
+                        // Update time
+                        CurrentDate = new Date();
+                        // Use peak to check if exp
+                        BannedIPData IPData = (BannedIPData) BannedIP.Peak_Queue();
+                        if (IPData.ExpireTime <= CurrentDate.getTime()) { // Expired
+                            PrintMsg((byte) 0x00, "IP '" + IPData.IPAddr + "' ban time has expired.");
+                            ExeUnbanCmd((BannedIPData) BannedIP.De_Queue()); //Unban
+                        } else {
+                            Thread.sleep(1000); // Check only once every 1 seconds
+                        }
+                    } else {
+                        Thread.sleep(1000); // Check only once every 1 seconds
+                    }
+                } catch (Exception e) {
+                    PrintMsg((byte) 0x10, "Exception caight while removing expired IP from Queue.");
+                    PrintMsg((byte) 0x20, "Exception Detail: " + e);
+                }
+            }
+        }
+    }
+
+    /*
+     * ********************************************************************
+     * Ban and unban commands execution
+     * ********************************************************************
+     */
+    // Execute ban command
     private static void ExecuteBanCmd(String RemoteIP) {
         //Check valid ban settings
         if (BanCmd == null || BanCmd.isEmpty() || BanCmd.equalsIgnoreCase("OFF")) {
             return;
         }
-        
+
         //Check whitelist
         for (int Count = 0; Count < IPWhiteListCount; Count++) {
             if (IPWhiteList[Count].equalsIgnoreCase(RemoteIP)) {
@@ -690,66 +704,6 @@ public class Honey_Port {
         }
     }
 
-    /**
-     * ********************************************************************
-     * Unban time expiration checker
-     * ********************************************************************
-     */
-    static class UnbanTimeExpChecker implements Runnable {
-
-        public UnbanTimeExpChecker() {
-        }
-
-        @Override
-        public void run() {
-            while (Shutdown != true) {
-                try {
-                    if (!BannedIP.isEmpty()) {
-                        // Update time
-                        CurrentDate = new Date();
-                        // Use peak to check if exp
-                        BannedIPData IPData = (BannedIPData) BannedIP.Peak_Queue();
-                        if (IPData.ExpireTime <= CurrentDate.getTime()) { // Expired
-                            PrintMsg((byte) 0x00, "IP '" + IPData.IPAddr + "' ban time has expired.");
-                            ExeUnbanCmd((BannedIPData) BannedIP.De_Queue()); //Unban
-                        } else {
-                            Thread.sleep(1000); // Check only once every 1 seconds
-                        }
-                    } else {
-                        Thread.sleep(1000); // Check only once every 1 seconds
-                    }
-                } catch (Exception e) {
-                    PrintMsg((byte) 0x10, "Exception caight while removing expired IP from Queue.");
-                    PrintMsg((byte) 0x20, "Exception Detail: " + e);
-                }
-            }
-        }
-    }
-
-    /**
-     * ********************************************************************
-     * Remove all banned IPs on shutdown
-     * ********************************************************************
-     * Only works if:
-     * 1. UnbanCMD is setup correctly
-     * 2. BanLength > 0
-     */
-    public static void UnbanAllUponShutdown() {
-        if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
-            PrintMsg((byte) 0x00, "Removing all banned IPs...");
-            //Unban all until empty
-            while (!BannedIP.isEmpty()) {
-                ExeUnbanCmd((BannedIPData) BannedIP.De_Queue());
-            }
-            PrintMsg((byte) 0x00, "All banned IPs are removed.");
-        }
-    }
-    
-    /**
-     * ********************************************************************
-     * Execute unban command
-     * ********************************************************************
-     */
     private static void ExeUnbanCmd(BannedIPData IPData) {
         //Convert %ip to actual ip address
         String ExeCmd = UnbanCmd.replaceAll("%ip", IPData.IPAddr);
@@ -762,7 +716,61 @@ public class Honey_Port {
             PrintMsg((byte) 0x20, "Exception Detail: " + e);
         }
     }
-    
+
+    /*
+     * ********************************************************************
+     * Remove all banned IPs on shutdown
+     * ******************************************************************** 
+     * Only works if:
+     * 1. UnbanCMD is setup correctly 2. BanLength > 0
+     */
+    public static void UnbanAllUponShutdown() {
+        if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
+            PrintMsg((byte) 0x00, "Removing all banned IPs...");
+            //Unban all until empty
+            while (!BannedIP.isEmpty()) {
+                ExeUnbanCmd((BannedIPData) BannedIP.De_Queue());
+            }
+            PrintMsg((byte) 0x00, "All banned IPs are removed.");
+        }
+    }
+
+    /*
+     * ********************************************************************
+     * Close all sockets and shutdown all threads
+     * ********************************************************************
+     */
+    private static void ShutdownAllThreads() {
+        PrintMsg((byte) 0x00, "Trying to shutdown all threads...");
+        PrintMsg((byte) 0x00, "Shutting down threads might take a while. Use TaskMgr to end the program if it does not respond for 5 minutes.");
+        Shutdown = true;
+        // Send socket close signal
+        for (int Count = 0; Count < TotalPortsCount; Count++) {
+            try {
+                PortSockets[Count].close();
+            } catch (NullPointerException e) {
+                // We do not care about null pointer exception.
+                // This exception will occurs if the port failed to create (bind) or being shutted during runtime with !s command.
+            } catch (Exception e) {
+                PrintMsg((byte) 0x10, "Exception caught while shuttdown port. Port ID: " + Count);
+                PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            }
+        }
+        // Verify all threads are off by using join
+        for (int Count = 0; Count < TotalPortsCount; Count++) {
+            try {
+                if (PortsListenerThreads[Count].isAlive() != false) {
+                    PortsListenerThreads[Count].join();
+                }
+            } catch (Exception e) {
+                PrintMsg((byte) 0x10, "Exception caught while waiting threads to close. Thread ID: " + Count);
+                PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            }
+        }
+        //
+        PrintMsg((byte) 0x00, "All listening ports are closed.");
+    }
+
     /**
      * ********************************************************************
      * Main function
@@ -796,7 +804,7 @@ public class Honey_Port {
 
         //Remove all banned IPs (Only works if UnbanCMD is being setup correctly and BanLength > 0)
         UnbanAllUponShutdown();
-        
+
         // Exiting message
         PrintMsg((byte) 0x00, "Total of " + DetectionCount + " connection caught during program uptime.");
         PrintMsg((byte) 0x00, "Exiting main program...");

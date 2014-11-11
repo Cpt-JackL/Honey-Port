@@ -19,7 +19,6 @@
  *
  * @author Jack L (http://jack-l.com)
  */
-
 public class BannedIPData {
 
     public String IPAddr;

@@ -19,7 +19,6 @@
  *
  * @author Jack L (http://jack-l.com)
  */
-
 // Queue data structure
 public class Queue<D> {
 
@@ -73,7 +72,7 @@ public class Queue<D> {
 
         return false;
     }
-    
+
     public boolean Search_Queue_Backward(String Data) {
         // String comparison only
         QueueLL CurrentPos = Tail;

@@ -1,4 +1,10 @@
 ----------------------------------------
+Version: 0.1.8
+----------------------------------------
+Fixed:
+1. Nullpointer exception when trying to execute ban command with unban off.
+
+----------------------------------------
 Version: 0.1.7.1
 ----------------------------------------
 Minor Refactoring.

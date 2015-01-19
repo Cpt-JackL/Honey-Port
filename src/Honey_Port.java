@@ -670,7 +670,7 @@ public class Honey_Port {
                 BanMutex.acquire();
 
                 // Check banlist, make sure no dulicate bans
-                if (BannedIP.Search_Queue_Backward(RemoteIP)) {
+                if (BannedIP != null && BannedIP.Search_Queue_Backward(RemoteIP)) {
                     PrintMsg((byte) 0x20, "IP '" + RemoteIP + "' is already in the banned list.");
                     return;
                 }
@@ -725,7 +725,7 @@ public class Honey_Port {
      * 1. UnbanCMD is setup correctly 2. BanLength > 0
      */
     public static void UnbanAllUponShutdown() {
-        if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
+        if (BannedIP != null && UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
             PrintMsg((byte) 0x00, "Removing all banned IPs...");
             //Unban all until empty
             while (!BannedIP.isEmpty()) {

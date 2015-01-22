@@ -1,4 +1,14 @@
 ----------------------------------------
+Version: 0.1.9
+----------------------------------------
+Added:
+1. Random welcome message.
+2. Random disconnect time delay (Firewall might interrupt the connection first).
+3. New settings in config file for above features.
+* Main goal for this update is to confuse nmap port/service scan, as well as OS detection.
+* Nmap will display "TCPWrapper" for all honey ports in the previous versions.
+
+----------------------------------------
 Version: 0.1.8
 ----------------------------------------
 Fixed:

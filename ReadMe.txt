@@ -124,6 +124,23 @@ For Windows with Windows Firewall, you should use:
 General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
 %ip will be replaced with detected IP on a detection
 
+---Random Delay Disconnecting Time and Random Welcome Msg---
+FakeSrv.Enabled - Enable/Disable random delay timer and random welcome message
+Valid range: 0 or 1
+
+FakeSrv.RndDelayDisconnecting - Random delay time range
+Valid range: (Integer) 0 - max of Java int
+I recommend not to exceed 10, connection should lost once your firewall bans the client IP. 
+
+FakeSrv.RndWelcomeMsgCount - How many random message do you have?
+Valid range: (Integer) 0 - max of Java int
+Use 0 to disable this feature.
+
+FakeSrv.RndWelcomeMsg.# - Welcome message strings
+Valid range: Any String
+Replace # with 1, 2, 3, 4...
+This string will be send to the client. Each port will randomly select a message and keep that message constant on the same port. 
+
 ---Port range listening specifications---
 PortRange.Start - Range of ports to be listened
 Valid range: (Integer) 1 - 65535, should also be less than or equal to PortRange.End

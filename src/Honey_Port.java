@@ -78,6 +78,17 @@ public class Honey_Port {
      */
     public static int BanLength = 0;
 
+    
+    /**
+     * Fake Srv Welcome Message Settings
+     */
+    public static int FakeSrvRndDelayDisconnecting = 0;
+    public static int RndWelcomeMsgCount = 0;
+    public static String[] RndWelcomeMsg;
+    
+    /**
+     * Port Range settings, see read me file for detail
+     */
     public static int PortRangeStart = -1;
     public static int PortRangeEnd = 0;
 
@@ -264,7 +275,7 @@ public class Honey_Port {
             // Color code
             UseColorCode = Boolean.parseBoolean(ConfPropReader.getProperty("Program.UseColorCode"));
 
-            // Debug Level
+            // DebuglLevel
             DebugLevel = Byte.parseByte(ConfPropReader.getProperty("Program.Debug"), 16);
             PrintMsg((byte) 0x10, "Debug Level is set to: " + DebugLevel);
 
@@ -278,6 +289,23 @@ public class Honey_Port {
             ExcludedPortsCount = Integer.parseInt(ConfPropReader.getProperty("ExclPort.Count"));
             IPWhiteListCount = Integer.parseInt(ConfPropReader.getProperty("IPWhiteList.Count"));
 
+            // Rnd fake srv welcome msg settings
+            if (Integer.parseInt(ConfPropReader.getProperty("FakeSrv.Enabled")) == 1) {
+                FakeSrvRndDelayDisconnecting = Integer.parseInt(ConfPropReader.getProperty("FakeSrv.RndDelayDisconnecting"));
+                RndWelcomeMsgCount = Integer.parseInt(ConfPropReader.getProperty("FakeSrv.RndWelcomeMsgCount"));
+                
+                // Read rnd welcome messages
+                if (RndWelcomeMsgCount > 0) {
+                    RndWelcomeMsg = new String[RndWelcomeMsgCount];
+                    
+                    for (int Count = 0; Count < RndWelcomeMsgCount; Count++) {
+                        RndWelcomeMsg[Count] = ConfPropReader.getProperty("FakeSrv.RndWelcomeMsg." + (Count + 1));
+                    }
+                }
+                
+                
+            }
+            
             // Read specificed ports if necessary
             if (SpecifiedPortsCount > 0 && SpecifiedPortsCount < 65536) {
                 SpecifiedPorts = new int[SpecifiedPortsCount];
@@ -517,14 +545,29 @@ public class Honey_Port {
     static class PortListeningThread implements Runnable {
 
         // Port number for this thread
-        int PortNum = 0;
-        int ID = 0;
+        private int PortNum = 0;
+        private int ID = 0;
+        private int DelayDisconnectTime = -1;
+        private int RndWelcomeMsgID = -1;
 
         // Init Port Number
         public PortListeningThread(int InputPort, int ID) {
             PrintMsg((byte) 0x20, "Initializing port " + InputPort + "...");
-            PortNum = InputPort;
+            this.PortNum = InputPort;
             this.ID = ID;
+            
+            //Random Number Generator
+            Random RNG = new Random();
+            
+            // Generate random delay time
+            if (FakeSrvRndDelayDisconnecting > 0) {
+                DelayDisconnectTime = RNG.nextInt(FakeSrvRndDelayDisconnecting);
+            }
+            
+            //Generate random message for this port
+            if (RndWelcomeMsgCount > 0) {
+                RndWelcomeMsgID = RNG.nextInt(RndWelcomeMsgCount + 1);
+            }
         }
 
         //Create port listener
@@ -544,7 +587,7 @@ public class Honey_Port {
 
                     while (Shutdown != true) {
                         Socket ConnectionS = Listening.accept();
-                        new Thread(new ConnectionHandler(ConnectionS)).start();
+                        new Thread(new ConnectionHandler(ConnectionS, DelayDisconnectTime, RndWelcomeMsgID)).start();
                     }
                 } catch (BindException e) {
                     PrintMsg((byte) 0x01, "Failed to bind on port " + PortNum + ". Thread shutting down.");
@@ -564,9 +607,13 @@ public class Honey_Port {
     static class ConnectionHandler implements Runnable {
 
         private Socket ConnectionS;
+        private int DelayDisconnectTime = -1;
+        private int WelcomeMsgID = -1;
 
-        public ConnectionHandler(Socket InputSocket) {
-            ConnectionS = InputSocket;
+        public ConnectionHandler(Socket InputSocket, int DelayDisconnectTime, int WelcomeMsgID) {
+            this.ConnectionS = InputSocket;
+            this.DelayDisconnectTime = DelayDisconnectTime;
+            this.WelcomeMsgID = WelcomeMsgID;
         }
 
         @Override
@@ -576,15 +623,7 @@ public class Honey_Port {
             int RemotePort = ((InetSocketAddress) ConnectionS.getRemoteSocketAddress()).getPort();
             String LocalIP = ConnectionS.getLocalAddress().toString();
             int LocalPort = ConnectionS.getLocalPort();
-            //Close connection immediately after we acquired the IP address of the remote machine
-            try {
-                ConnectionS.close();
-            } catch (Exception e) {
-                PrintMsg((byte) 0x01, "Exception caught while closing remote connection for IP: " + RemoteIP);
-                PrintMsg((byte) 0x20, "Exception Detail: " + e);
-            }
 
-            // Process everything else
             // Remove slash if found in IP address
             if (RemoteIP.substring(0, 1).equalsIgnoreCase("/")) {
                 RemoteIP = RemoteIP.substring(1);
@@ -596,8 +635,39 @@ public class Honey_Port {
             DetectionCount++;
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
 
+            // Respond welcome message if enabled
+            if (WelcomeMsgID != -1 && WelcomeMsgID != RndWelcomeMsgCount) {
+                try {
+                    PrintMsg((byte) 0x20, "Sending welcome message to IP: " + RemoteIP + "...");
+                    ConnectionS.getOutputStream().write(RndWelcomeMsg[WelcomeMsgID].getBytes("US-ASCII"));
+                    //OutputStreamWriter SendWelcomeMsg = new OutputStreamWriter(ConnectionS.getOutputStream(), "UTF-8");
+                    //SendWelcomeMsg.write(RndWelcomeMsg[WelcomeMsgID], 0, RndWelcomeMsg[WelcomeMsgID].length());
+                } catch (Exception e) {
+                    PrintMsg((byte) 0x01, "Exception caught while sending welcome message to IP: " + RemoteIP);
+                    PrintMsg((byte) 0x20, "Exception Detail: " + e);
+                } 
+            }
+            
             // Add IP to firewall (execute cmd)
             ExecuteBanCmd(RemoteIP);
+            
+            //Disconnecting the client
+            if (DelayDisconnectTime > 1) {
+                try {
+                    PrintMsg((byte) 0x20, "Wait for " + DelayDisconnectTime + " seconds before closing connection " + RemoteIP + "(Firewall might disconnect the connection)...");
+                    Thread.sleep(DelayDisconnectTime * 1000);
+                } catch (Exception e) {
+                    
+                }
+            }
+            
+            //Close connection
+            try {
+                ConnectionS.close();
+            } catch (Exception e) {
+                PrintMsg((byte) 0x01, "Exception caught while closing remote connection for IP: " + RemoteIP);
+                PrintMsg((byte) 0x20, "Exception Detail: " + e);
+            }
         }
     }
 

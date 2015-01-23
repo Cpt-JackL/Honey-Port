@@ -1,5 +1,34 @@
 ----------------------------------------
-Version: 0.1.9
+Version: 0.1.10 - 2015-01-22
+----------------------------------------
+Added:
+1. Random welcome message now supports different encoding types.
+*. Non-ASCII and non-base64 encoding might not fully supported yet. Use base64 encoding if needed.
+2. Use of synchronized in some function and removed mutex.
+
+Fixed:
+1. Duplicated bans on a single IP when unban is off
+
+Here is a sample output data from NMAP targeting a Windows 10 Technical Preview machine with Honey Port running.
+----------------------------------------
+17818/tcp open  unknown
+17819/tcp open  http       Apache httpd
+17820/tcp open  tcpwrapped
+17821/tcp open  unknown
+17822/tcp open  mysql      MySQL 5.6.19-0ubuntu0.14.04.1
+17823/tcp open  unknown
+17824/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
+17825/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
+17826/tcp open  unknown
+
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: specialized|WAP|phone
+Running: iPXE 1.X, Linksys Linux 2.4.X, Linux 2.6.X, Sony Ericsson embedded
+OS CPE: cpe:/o:ipxe:ipxe:1.0.0%2b cpe:/o:linksys:linux_kernel:2.4 cpe:/o:linux:linux_kernel:2.6 cpe:/h:sonyericsson:u8i_vivaz
+OS details: iPXE 1.0.0+, Tomato 1.28 (Linux 2.4.20), Tomato firmware (Linux 2.6.22), Sony Ericsson U8i Vivaz mobile phone
+
+----------------------------------------
+Version: 0.1.9 - 2015-01-21
 ----------------------------------------
 Added:
 1. Random welcome message.
@@ -9,18 +38,18 @@ Added:
 * Nmap will display "TCPWrapper" for all honey ports in the previous versions.
 
 ----------------------------------------
-Version: 0.1.8
+Version: 0.1.8 - 2015-01-18
 ----------------------------------------
 Fixed:
 1. Nullpointer exception when trying to execute ban command with unban off.
 
 ----------------------------------------
-Version: 0.1.7.1
+Version: 0.1.7.1 - 2014-11-10
 ----------------------------------------
 Minor Refactoring.
 
 ----------------------------------------
-Version: 0.1.7
+Version: 0.1.7 - 2014-11-08
 ----------------------------------------
 Added:
 1. New message category: BAN/UNBAN.
@@ -35,7 +64,7 @@ Fixed:
 
 Configuration file removed "Program.LogToFile" and added "Program.LogLevel". Please use the read me file to set-up this variable.
 ----------------------------------------
-Version: 0.1.6
+Version: 0.1.6  - 2014-11-05
 ----------------------------------------
 Added:
 1. Remove all banned IP on program close.
@@ -47,7 +76,7 @@ Changed:
 1. Unban checker changed from checking every 5 minutes to 1 minute for expired bans.
 
 ----------------------------------------
-Version: 0.1.5
+Version: 0.1.5 - 2014-10-04
 ----------------------------------------
 Added:
 1. GNU License v3.
@@ -56,7 +85,7 @@ Change repo from private to public.
 Additional testing still required.
 
 ----------------------------------------
-Version: 0.1.4
+Version: 0.1.4 - 2014-10-04
 ----------------------------------------
 Added:
 1. Read me file for how to setup this application.
@@ -65,7 +94,7 @@ Fixed:
 1. Duplicated IPs added to firewall (Additional testing required).
 
 ----------------------------------------
-Version: 0.1.3
+Version: 0.1.3 - 2014-10-02
 ----------------------------------------
 Added:
 1. Support for IP white list.
@@ -75,11 +104,11 @@ Fixed:
 2. A statement typo in line #539.
 
 ----------------------------------------
-Version: 0.1.2
+Version: 0.1.2 - 2014-09-29
 ----------------------------------------
 Fixed Color Code issue on Windows. User can choose to enable this feature or not. 
 
 ----------------------------------------
-Version: 0.1.1
+Version: 0.1.1 - 2014-09-29
 ----------------------------------------
 Initial Commit. Most functions are finished. Still require some testing. 

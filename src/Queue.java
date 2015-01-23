@@ -62,7 +62,7 @@ public class Queue<D> {
         while (CurrentPos != null) {
             //See if there is a match
             String CurrentData = CurrentPos.Data.toString();
-            if (CurrentData.equalsIgnoreCase(Data)) {
+            if (CurrentData.equals(Data)) {
                 return true;
             }
 

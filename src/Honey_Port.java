@@ -78,14 +78,14 @@ public class Honey_Port {
      */
     public static int BanLength = 0;
 
-    
     /**
      * Fake Srv Welcome Message Settings
      */
     public static int FakeSrvRndDelayDisconnecting = 0;
     public static int RndWelcomeMsgCount = 0;
+    public static String[] RndWelcomeMsgType;
     public static String[] RndWelcomeMsg;
-    
+
     /**
      * Port Range settings, see read me file for detail
      */
@@ -111,8 +111,6 @@ public class Honey_Port {
     private static Thread[] PortsListenerThreads; // Use to start thread and stop thread
     private static ServerSocket[] PortSockets; // This is used to send shutdown signal to the listening socket
     private static int[] ThreadPortNum; // Keep track what is the port number for this thread
-    // Mutex for bans - Usually not gonna happen
-    private static Semaphore BanMutex = new Semaphore(1);
     // Counters
     private static int TotalPortsCount;
     private static int DetectionCount = 0;
@@ -293,19 +291,21 @@ public class Honey_Port {
             if (Integer.parseInt(ConfPropReader.getProperty("FakeSrv.Enabled")) == 1) {
                 FakeSrvRndDelayDisconnecting = Integer.parseInt(ConfPropReader.getProperty("FakeSrv.RndDelayDisconnecting"));
                 RndWelcomeMsgCount = Integer.parseInt(ConfPropReader.getProperty("FakeSrv.RndWelcomeMsgCount"));
-                
+
                 // Read rnd welcome messages
                 if (RndWelcomeMsgCount > 0) {
                     RndWelcomeMsg = new String[RndWelcomeMsgCount];
-                    
+                    RndWelcomeMsgType = new String[RndWelcomeMsgCount];
+
+                    //Reading contents
                     for (int Count = 0; Count < RndWelcomeMsgCount; Count++) {
-                        RndWelcomeMsg[Count] = ConfPropReader.getProperty("FakeSrv.RndWelcomeMsg." + (Count + 1));
+                        RndWelcomeMsgType[Count] = ConfPropReader.getProperty("FakeSrv.RndWelcomeMsg." + (Count + 1) + ".Type");
+                        RndWelcomeMsg[Count] = ConfPropReader.getProperty("FakeSrv.RndWelcomeMsg." + (Count + 1) + ".Content");
                     }
                 }
-                
-                
+
             }
-            
+
             // Read specificed ports if necessary
             if (SpecifiedPortsCount > 0 && SpecifiedPortsCount < 65536) {
                 SpecifiedPorts = new int[SpecifiedPortsCount];
@@ -331,11 +331,14 @@ public class Honey_Port {
             }
 
             // Setup queue for banned ip if enabled
-            if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
+            if (BanCmd != null && !BanCmd.isEmpty() && !BanCmd.equalsIgnoreCase("OFF")) {
                 // Set up new Queue
                 BannedIP = new Queue();
                 // Start exp checker
-                new Thread(new UnbanTimeExpChecker()).start();
+
+                if (UnbanCmd != null && !UnbanCmd.isEmpty() && !UnbanCmd.equalsIgnoreCase("OFF") && BanLength > 0) {
+                    new Thread(new UnbanTimeExpChecker()).start();
+                }
             }
         } catch (FileNotFoundException e) {
             PrintMsg((byte) 0x02, "Conf file '" + ConfFile + "' not found!");
@@ -349,7 +352,7 @@ public class Honey_Port {
 
     // Check settings and make sure they are valid
     private static void ValidateSettings() {
-        PrintMsg((byte) 0x00, "Validating variable settings...");
+        PrintMsg((byte) 0x00, "Validating other variable settings...");
         if (DebugLevel >= 0x3 || DebugLevel < 0x0) {
             PrintMsg((byte) 0x02, "Invalid 'DebugLevel' input. Valid range is 0x0 - 0x2.");
             System.exit(-1);
@@ -555,15 +558,15 @@ public class Honey_Port {
             PrintMsg((byte) 0x20, "Initializing port " + InputPort + "...");
             this.PortNum = InputPort;
             this.ID = ID;
-            
+
             //Random Number Generator
             Random RNG = new Random();
-            
+
             // Generate random delay time
             if (FakeSrvRndDelayDisconnecting > 0) {
-                DelayDisconnectTime = RNG.nextInt(FakeSrvRndDelayDisconnecting);
+                DelayDisconnectTime = RNG.nextInt(FakeSrvRndDelayDisconnecting + 1);
             }
-            
+
             //Generate random message for this port
             if (RndWelcomeMsgCount > 0) {
                 RndWelcomeMsgID = RNG.nextInt(RndWelcomeMsgCount + 1);
@@ -583,7 +586,7 @@ public class Honey_Port {
                     ServerSocket Listening = new ServerSocket(PortNum);
                     PortSockets[ID] = Listening;
                     ThreadPortNum[ID] = PortNum;
-                    PrintMsg((byte) 0x20, "Listening on port " + PortNum + ".");
+                    PrintMsg((byte) 0x20, "Listening on port " + PortNum + ". Param: WelcomeMsgCount=" + RndWelcomeMsgCount + ", WelcomeMsgID=" + RndWelcomeMsgID + ", DelayDisconnectTimer=" + DelayDisconnectTime + ".");
 
                     while (Shutdown != true) {
                         Socket ConnectionS = Listening.accept();
@@ -619,18 +622,11 @@ public class Honey_Port {
         @Override
         public void run() {
             // Record remote IP
-            String RemoteIP = ((InetSocketAddress) ConnectionS.getRemoteSocketAddress()).getAddress().toString();
+            String RemoteIP = ((InetSocketAddress) ConnectionS.getRemoteSocketAddress()).getAddress().getHostAddress();
             int RemotePort = ((InetSocketAddress) ConnectionS.getRemoteSocketAddress()).getPort();
-            String LocalIP = ConnectionS.getLocalAddress().toString();
+            String LocalIP = ConnectionS.getLocalAddress().getHostAddress();
             int LocalPort = ConnectionS.getLocalPort();
 
-            // Remove slash if found in IP address
-            if (RemoteIP.substring(0, 1).equalsIgnoreCase("/")) {
-                RemoteIP = RemoteIP.substring(1);
-            }
-            if (LocalIP.substring(0, 1).equalsIgnoreCase("/")) {
-                LocalIP = LocalIP.substring(1);
-            }
             // Add to counter and display message to log
             DetectionCount++;
             PrintMsg((byte) 0x04, "Connection detected from '" + RemoteIP + ":" + RemotePort + "' to '" + LocalIP + ":" + LocalPort + "'");
@@ -638,29 +634,36 @@ public class Honey_Port {
             // Respond welcome message if enabled
             if (WelcomeMsgID != -1 && WelcomeMsgID != RndWelcomeMsgCount) {
                 try {
-                    PrintMsg((byte) 0x20, "Sending welcome message to IP: " + RemoteIP + "...");
-                    ConnectionS.getOutputStream().write(RndWelcomeMsg[WelcomeMsgID].getBytes("US-ASCII"));
-                    //OutputStreamWriter SendWelcomeMsg = new OutputStreamWriter(ConnectionS.getOutputStream(), "UTF-8");
-                    //SendWelcomeMsg.write(RndWelcomeMsg[WelcomeMsgID], 0, RndWelcomeMsg[WelcomeMsgID].length());
+                    if (RndWelcomeMsgType[WelcomeMsgID].equalsIgnoreCase("Base64")) { // Check message is base64 format
+                        PrintMsg((byte) 0x10, "Sending decoded base64 welcome message to IP: " + RemoteIP + "...");
+                        ConnectionS.getOutputStream().write(Base64.getDecoder().decode(RndWelcomeMsg[WelcomeMsgID]));
+                    } else {
+                        // Using non-ascii encoding might cause some problem here...
+                        // Depends on file encoding, Java charset etc. etc. Use base64 encoding if needed
+                        PrintMsg((byte) 0x10, "Sending " + RndWelcomeMsgType[WelcomeMsgID] + " welcome message to IP: " + RemoteIP + "...");
+                        ConnectionS.getOutputStream().write(RndWelcomeMsg[WelcomeMsgID].getBytes(RndWelcomeMsgType[WelcomeMsgID]));
+                    }
+                } catch (UnsupportedEncodingException e) {
+                    PrintMsg((byte) 0x01, "Failed to send welcome message to client. Unknown encoding name: " + RndWelcomeMsgType[WelcomeMsgID] + ".");
                 } catch (Exception e) {
                     PrintMsg((byte) 0x01, "Exception caught while sending welcome message to IP: " + RemoteIP);
                     PrintMsg((byte) 0x20, "Exception Detail: " + e);
-                } 
+                }
             }
-            
+
             // Add IP to firewall (execute cmd)
             ExecuteBanCmd(RemoteIP);
-            
+
             //Disconnecting the client
             if (DelayDisconnectTime > 1) {
                 try {
                     PrintMsg((byte) 0x20, "Wait for " + DelayDisconnectTime + " seconds before closing connection " + RemoteIP + "(Firewall might disconnect the connection)...");
                     Thread.sleep(DelayDisconnectTime * 1000);
                 } catch (Exception e) {
-                    
+
                 }
             }
-            
+
             //Close connection
             try {
                 ConnectionS.close();
@@ -712,8 +715,8 @@ public class Honey_Port {
      * Ban and unban commands execution
      * ********************************************************************
      */
-    // Execute ban command
-    private static void ExecuteBanCmd(String RemoteIP) {
+    // Execute ban command (Synchronized)
+    private static synchronized void ExecuteBanCmd(String RemoteIP) {
         //Check valid ban settings
         if (BanCmd == null || BanCmd.isEmpty() || BanCmd.equalsIgnoreCase("OFF")) {
             return;
@@ -731,46 +734,29 @@ public class Honey_Port {
         String ExeCmd = BanCmd.replaceAll("%ip", RemoteIP);
 
         // Prepare to execute command, only one execution at a time
-        boolean Retry = true;
-        while (Retry) {
-            Retry = false;
-
-            try {
-                //Get Mutex
-                BanMutex.acquire();
-
-                // Check banlist, make sure no dulicate bans
-                if (BannedIP != null && BannedIP.Search_Queue_Backward(RemoteIP)) {
-                    PrintMsg((byte) 0x20, "IP '" + RemoteIP + "' is already in the banned list.");
-                    return;
-                }
-
-                // Executing cmd here.
-                PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
-                Runtime.getRuntime().exec(ExeCmd);
-                PrintMsg((byte) 0x05, "Banned IP: " + RemoteIP);
-
-                // Put this IP address to queue list if unban is enabled
-                if (BannedIP != null) {
-                    // Calc expire time
-                    CurrentDate = new Date();
-                    BannedIPData NewIP = new BannedIPData(RemoteIP, CurrentDate.getTime() + BanLength * 1000);
-                    // Put it to ban list
-                    BannedIP.En_Queue(NewIP);
-                }
-            } catch (InterruptedException e) {
-                PrintMsg((byte) 0x20, "Mutex locked: " + e + "\nRetry in 1 seconds...");
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e1) {
-                }
-                Retry = true;
-            } catch (Exception e) {
-                PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
-                PrintMsg((byte) 0x20, "Exception Detail: " + e);
-            } finally {
-                BanMutex.release();
+        try {
+            // Check banlist, make sure no dulicate bans
+            if (BannedIP != null && BannedIP.Search_Queue_Backward(RemoteIP)) {
+                PrintMsg((byte) 0x20, "IP '" + RemoteIP + "' is already in the banned list.");
+                return;
             }
+
+            // Executing cmd here.
+            PrintMsg((byte) 0x10, "Executing cmd: " + ExeCmd);
+            Runtime.getRuntime().exec(ExeCmd);
+            PrintMsg((byte) 0x05, "Banned IP: " + RemoteIP);
+
+            // Put this IP address to queue list if unban is enabled
+            if (BannedIP != null) {
+                // Calc expire time
+                CurrentDate = new Date();
+                BannedIPData NewIP = new BannedIPData(RemoteIP, CurrentDate.getTime() + BanLength * 1000);
+                // Put it to ban list
+                BannedIP.En_Queue(NewIP);
+            }
+        } catch (Exception e) {
+            PrintMsg((byte) 0x10, "Failed to execute command: " + ExeCmd);
+            PrintMsg((byte) 0x20, "Exception Detail: " + e);
         }
     }
 
@@ -845,6 +831,7 @@ public class Honey_Port {
      * ********************************************************************
      * Main function
      * ********************************************************************
+     * @param args
      */
     // Main function, entry point of the software
     public static void main(String[] args) {

@@ -6,6 +6,8 @@ Program written in Java
 This program is still under Beta testing stage.
 
 To run the compiled program, use "java -jar Honey_Port.jar"
+The following libraries are required for compiling:
+java.*
 
 --------------------------------
 License
@@ -136,10 +138,15 @@ FakeSrv.RndWelcomeMsgCount - How many random message do you have?
 Valid range: (Integer) 0 - max of Java int
 Use 0 to disable this feature.
 
-FakeSrv.RndWelcomeMsg.# - Welcome message strings
-Valid range: Any String
+FakeSrv.RndWelcomeMsg.#.Type - Type of the welcome message
+Valid range: Name of Charset
+Please see http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html for list of charset.
+Use "Base64" encoding for non-human readable data.
+
+FakeSrv.RndWelcomeMsg.#.Content - Welcome message strings
+Valid range: String data or Base64 data
 Replace # with 1, 2, 3, 4...
-This string will be send to the client. Each port will randomly select a message and keep that message constant on the same port. 
+This string or base64 data will be send to the client. Each port will randomly select a message and keep that message constant on the same port. 
 
 ---Port range listening specifications---
 PortRange.Start - Range of ports to be listened
@@ -220,6 +227,15 @@ Program.LogLevel=20
 
 # Ban length in seconds (Use 0 to disable unban)
 General.BanLength=3600
+
+# Random delay disconnecting timer and random welcome message settings
+FakeSrv.Enabled=1
+FakeSrv.RndDelayDisconnecting=1
+FakeSrv.RndWelcomeMsgCount=2
+FakeSrv.RndWelcomeMsg.1.Type=ASCII
+FakeSrv.RndWelcomeMsg.1.Content=SSH-2.0-OpenSSH_5.3\n
+FakeSrv.RndWelcomeMsg.2.Type=Base64
+FakeSrv.RndWelcomeMsg.2.Content=OAAAAAo1LjEuNTYtbG9nALA9VwJCIXpndz90SQD/9wgCAAAAAAAAAAAAAAAAAABSPiItXGhzLSRscnkA
 
 # Port range to use as honey ports
 PortRange.Start=60000

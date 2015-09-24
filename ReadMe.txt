@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Introduction
 --------------------------------
 This application is designed to prevent attacker/hacker to find out valid application ports on a server.
-This application ONLY detects upon a full-open TCP connection (We took deep consideration for this and decided to detect only full-open TCP connections to prevent TCP spoofing connections).
+This application ONLY detects upon a full-open TCP connection (We took deep consideration for this and decided to detect only full-open TCP connections. Spoofing is not possible).
 
 It is useful to hide your application ports inside a port range that is being listened by this application.
 
@@ -40,11 +40,13 @@ A valid SSH port is 22953, you can set this application to listen from 22900 to 
 
 We call ports from 22900 to 23000 excluding 22953 the honey ports. This is why the application is called honey port.
 
-A half-open TCP port scanner will respond that all ports from 22900 to 23000 are open, but without knowing what service you are running. Once the attacker try to connect to one of the honey ports, they will be ban immediately from the server. It is unlikely they will find your SSH port that is listening on 22953.
+A half-open TCP port scanner will respond that all ports from 22900 to 23000 are open, but without knowing what kind service you are running. Once the attacker trying to connect to one of the honey ports, they will be ban immediately from the server. It is unlikely they will find your SSH port that is running on port 22953.
 
 A full-open TCP port scanner is likely detect first one or maybe few other open ports and then completely banned from the server.
 
-However, you must set up this application correctly, especially BanCmd and UnbanCmd. Wrong configuration may result serious problem on your server.
+However, you must set up this application correctly, especially BanCmd and UnbanCmd to ban offender's IP address. Wrong configuration may result serious problem on your server.
+
+An example of Nmap scan output with this application running can be found at the end of this file.
 
 Main Achievement: Reduce SSH/RDP attack on a server by creating honey ports to deflect hacking attempt.
 
@@ -56,7 +58,10 @@ System Requirements
 4. You will need a firewall the accepts bash/cmd/powershell command to ban an IP automatically. Also, you the user running this application must have permission to modify firewall rules. (We tested with iptables and Windows Firewall, both of them works)
 5. Currently only supports on IPv4 and TCP only.
 
-* Tested on: Linux with iptables and Java 1.7.
+* Tested on:
+- Linux with iptables and Java 1.7.
+- Windows Server 2012 R2 x64 with Windows Firewall and Java 1.8
+- Windows 10 Technical Preview Build 9879 with Windows Firewall and Java 1.8
 
 --------------------------------
 Negative impacts
@@ -71,22 +76,32 @@ We also tested 10000 threads with Linux, the maximum allowance threads for each 
 Before you begin, you should check the maximum allowance threads for each process in your OS settings. Reaching maximum threads during runtime will make this program useless.
 
 --------------------------------
+Run time commands
+--------------------------------
+Once all ports are created, you will be able to enter the following commands:
+!q - Exit the application
+
+!s ##### - Shutdown listener on a specified port
+For example:
+!s 8080
+
+--------------------------------
 Program Settings
 --------------------------------
 There is no argument required for this application.
 All settings are located inside "Settings.conf" file.
-
+--
 Program.Debug - Controls printout debug messages
-Valid range: (Integer) 0-2
+Valid range: (Integer) 0-3
 0 - No debug message will be displayed
 1 - Some debug message will be displayed
 3 - All debug message will be displayed
-
+--
 Program.UseColorCode - Use colour when printing out console messages
 Valid range: (boolean) True or False
 True - Enable this feature
 False - Disable this feature (You should use "False" on Windows OS
-
+--
 Program.LogLevel - Log detection information to file
 Log file name: Log_yyyy_MM_dd.log, yyyy_MM_dd is the year, month and date when this application starts.
 Valid range: 0 - 3F (Hex, please do not include 0x)
@@ -97,7 +112,7 @@ Valid range: 0 - 3F (Hex, please do not include 0x)
 |  |   |_ Log all printed out debug messages
 |  |_ Log DETECTION messages
 |_ Log BAN/UNBAN messages
-
+--
 General.BanCmd - Command to execute during a detection
 Valid Range: (String) Any
 Use OFF or leave it empty to disable this feature
@@ -111,7 +126,11 @@ General.BanCmd=iptables -A INPUT -s %ip -j DROP
 For Windows with Windows Firewall, you should use:
 General.BanCmd=PowerShell New-NetFirewallRule -DisplayName "Honey_Port_%ip" -Direction Inbound -Action Block -RemoteAddress %ip
 %ip will be replaced with detected IP on a detection
-
+--
+General.BanLength - How long should the program keep the IP banned? (seconds)
+Valid Range: (Integer) 0 - max of Java int
+Use 0 to disable unban feature.
+--
 General.UnbanCmd - Command to execute when a ban time is expired
 Valid Range: (String) Any
 Use OFF or leave it empty to disable this feature
@@ -129,20 +148,20 @@ General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
 ---Random Delay Disconnecting Time and Random Welcome Msg---
 FakeSrv.Enabled - Enable/Disable random delay timer and random welcome message
 Valid range: 0 or 1
-
-FakeSrv.RndDelayDisconnecting - Random delay time range
+--
+FakeSrv.RndDelayDisconnecting - Random delay time range (seconds)
 Valid range: (Integer) 0 - max of Java int
 I recommend not to exceed 10, connection should lost once your firewall bans the client IP. 
-
+--
 FakeSrv.RndWelcomeMsgCount - How many random message do you have?
 Valid range: (Integer) 0 - max of Java int
 Use 0 to disable this feature.
-
+--
 FakeSrv.RndWelcomeMsg.#.Type - Type of the welcome message
 Valid range: Name of Charset
 Please see http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html for list of charset.
 Use "Base64" encoding for non-human readable data.
-
+--
 FakeSrv.RndWelcomeMsg.#.Content - Welcome message strings
 Valid range: String data or Base64 data
 Replace # with 1, 2, 3, 4...
@@ -152,7 +171,7 @@ This string or base64 data will be send to the client. Each port will randomly s
 PortRange.Start - Range of ports to be listened
 Valid range: (Integer) 1 - 65535, should also be less than or equal to PortRange.End
 Use -1 to turn this feature off
-
+--
 PortRange.Start - Range of ports to be listened
 Valid range: (Integer) 1- 65535, should also be greater than or equal to PortRange.End
 Use -1 in PortRange.Start to turn this feature off
@@ -161,7 +180,7 @@ Use -1 in PortRange.Start to turn this feature off
 SpecPort.Count - How many additional port listeners do you need?
 Valid range: (Integer) 0 - 65535
 Use 0 to disable this feature
-
+--
 SpecPort.# - Additional port number to listen
 Valid range: (Integer) 1 -65535
 Replace # with 1, 2, 3, 4...
@@ -175,7 +194,7 @@ You can add more by using "SpecPort.3", "SpecPort.4"... You can add as many up t
 ExclPort.Count - How many ports you do not want this application to touch that are included in the range specification?
 Valid range: (Integer) 0 - 65535
 Use 0 to disable this feature
-
+--
 ExclPort.# - Port number to exclude
 Valid range: (Integer) 1 - 65535
 Replace # with 1, 2, 3, 4...
@@ -191,7 +210,7 @@ Note: Port that are in use will be automatically skipped as well.
 IPWhiteList.Count - How many IPs would you like to keep them in white list? Ban and unban cmd will be exclude for those IP address
 Valid range: (Integer) 0 to inf
 Use 0 to disable this feature
-
+--
 IPWhiteList.# - Specified IP address
 Valid range: IPv4 address
 To disable this feature, set IPWhiteList.Count to 0
@@ -254,11 +273,20 @@ IPWhiteList.Count=1
 IPWhiteList.1 = 127.0.0.1
 
 --------------------------------
-Run time commands
---------------------------------
-Once all ports are created, you will be able to enter the following commands:
-!q - Exit the application
+Here is a sample output data from NMAP targeting a Windows 10 Technical Preview machine with Honey Port running.
+----------------------------------------
+17818/tcp open  unknown
+17819/tcp open  http       Apache httpd
+17820/tcp open  tcpwrapped
+17821/tcp open  unknown
+17822/tcp open  mysql      MySQL 5.6.19-0ubuntu0.14.04.1
+17823/tcp open  unknown
+17824/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
+17825/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
+17826/tcp open  unknown
 
-!s ##### - Shutdown listener on a specified port
-For example:
-!s 8080
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: specialized|WAP|phone
+Running: iPXE 1.X, Linksys Linux 2.4.X, Linux 2.6.X, Sony Ericsson embedded
+OS CPE: cpe:/o:ipxe:ipxe:1.0.0%2b cpe:/o:linksys:linux_kernel:2.4 cpe:/o:linux:linux_kernel:2.6 cpe:/h:sonyericsson:u8i_vivaz
+OS details: iPXE 1.0.0+, Tomato 1.28 (Linux 2.4.20), Tomato firmware (Linux 2.6.22), Sony Ericsson U8i Vivaz mobile phone

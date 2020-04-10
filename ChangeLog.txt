@@ -1,7 +1,7 @@
 ----------------------------------------
 Version: 1.0.0 - 2020-04-10
 ----------------------------------------
-1. Refactored and restured majority of the code.
+1. Refactored and restructured majority of the code.
 2. Removed 'Queue' data structure.
 3. Changed structure of configuration file (Settings.conf).
     * No more shortcuts in property naming.

@@ -1,18 +1,11 @@
 Honey Port
 Author: Jack L
 Website: http://jack-l.com
-Program written in Java
-
-This program is still under Beta testing stage.
-
-To run the compiled program, use "java -jar Honey_Port.jar"
-The following libraries are required for compiling:
-java.*
 
 --------------------------------
 License
 --------------------------------
-Copyright (C) 2014 Jack L (http://jack-l.com)
+Copyright (C) 2014-2020 Jack L (http://jack-l.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,253 +20,50 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Library License:
+Project Lombok (https://projectlombok.org/)
+ - MIT: https://opensource.org/licenses/mit-license.php
+
 --------------------------------
 Introduction
 --------------------------------
-This application is designed to prevent attacker/hacker to find out valid application ports on a server.
-This application ONLY detects upon a full-open TCP connection (We took deep consideration for this and decided to detect only full-open TCP connections. Spoofing is not possible).
+The main purpose of this application is to prevent TCP port scanning by listening on multiple ports. Once the client established a full TCP connection to one of the ports, this application will detects it, logs the connection and adds the IP address to the firewall to block. It is useful to hide actual application ports inside ports monitored by Honey Port.
 
-It is useful to hide your application ports inside a port range that is being listened by this application.
-
-Example Scenario:
-A valid SSH port is 22953, you can set this application to listen from 22900 to 23000 and excluding port 22953.
-
-We call ports from 22900 to 23000 excluding 22953 the honey ports. This is why the application is called honey port.
-
-A half-open TCP port scanner will respond that all ports from 22900 to 23000 are open, but without knowing what kind service you are running. Once the attacker trying to connect to one of the honey ports, they will be ban immediately from the server. It is unlikely they will find your SSH port that is running on port 22953.
-
-A full-open TCP port scanner is likely detect first one or maybe few other open ports and then completely banned from the server.
-
-However, you must set up this application correctly, especially BanCmd and UnbanCmd to ban offender's IP address. Wrong configuration may result serious problem on your server.
-
-An example of Nmap scan output with this application running can be found at the end of this file.
-
-Main Achievement: Reduce SSH/RDP attack on a server by creating honey ports to deflect hacking attempt.
+Example:
+A FTP port is on 44149 and a SSH port is on 44891. This application listen from 44000 to 44999 and excluding port 44149 and 44891. A half-open TCP scanner will report every port from 44000 to 44999 are open and a full open TCP connection will result an immediate ban from the server. This reduces the chance for an attacker to find the actual port for your FTP and SSH services. An example of Nmap scan output with this application running can be found at the end of this file.
 
 --------------------------------
 System Requirements
 --------------------------------
-1. Any system that runs Java.
-2. You must allow traffic go throguh for ports that are listening by this program, otherwise it would be useless.
-4. You will need a firewall the accepts bash/cmd/powershell command to ban an IP automatically. Also, you the user running this application must have permission to modify firewall rules. (We tested with iptables and Windows Firewall, both of them works)
-5. Currently only supports on IPv4 and TCP only.
+ - Java Runtime Environment 8 or above is recommended.
+ - [Optional] A firewall for banning detected IPs.
 
 * Tested on:
-- Linux with iptables and Java 1.7.
-- Windows Server 2012 R2 x64 with Windows Firewall and Java 1.8
-- Windows 10 Technical Preview Build 9879 with Windows Firewall and Java 1.8
+- Linux with iptables and JRE 1.8.
+- Windows Server 2012 R2 x64 with Windows Firewall and JRE 1.8
+- Windows 10 Technical Preview Build 9879 with Windows Firewall and JRE 1.8
 
 --------------------------------
 Negative impacts
 --------------------------------
-Each listened port required a new thread running. If you are using this program from port 50000 - 59999, then 10000 threads will be created to listen on those ports.
-Also, each new inbound connection (detection) will required a new thread as well, but this thread should be close immediately once the connection is closed or the IP is banned.
-Listening on a big range of ports might have some negative impact to your system, but we have not yet notice any on our VM machines.
+Each listened port requires a thread. Listening ports from 44000 to 44999 is 1000 threads. Each new inbound connection requires a thread as well, but this thread should be ended immediately once the connection is closed or the IP is banned. Therefore listening on a wide range of ports might have negative impacts to the system, however we have not noticed any during our testing of the application.
 
-We tested with 10000 threads on Windows Server 2012 with debug mode, CPU usage was 0% on a 3.70Ghz 8 cores CPU. RAM usage was about 15MB.
-We also tested 10000 threads with Linux, the maximum allowance threads for each program denied this application to create more threads at the end. (I was too lazy to change the limit)
-
-Before you begin, you should check the maximum allowance threads for each process in your OS settings. Reaching maximum threads during runtime will make this program useless.
+We tested with 10000 threads on Windows Server 2012 with debug mode, CPU usage was mostly 0% on a 3.70Ghz 8 cores CPU. RAM usage was about 15MB.
+We also tested 10000 threads on Linux, this reached number of threads allowance for each application. Will have to change this limitation for this many ports to run on Linux.
 
 --------------------------------
 Run time commands
 --------------------------------
-Once all ports are created, you will be able to enter the following commands:
-!q - Exit the application
-
-!s ##### - Shutdown listener on a specified port
-For example:
-!s 8080
+Use '!h' to see a list of possible commands.
 
 --------------------------------
 Program Settings
 --------------------------------
-There is no argument required for this application.
-All settings are located inside "Settings.conf" file.
---
-Program.Debug - Controls printout debug messages
-Valid range: (Integer) 0-3
-0 - No debug message will be displayed
-1 - Some debug message will be displayed
-3 - All debug message will be displayed
---
-Program.UseColorCode - Use colour when printing out console messages
-Valid range: (boolean) True or False
-True - Enable this feature
-False - Disable this feature (You should use "False" on Windows OS
---
-Program.LogLevel - Log detection information to file
-Log file name: Log_yyyy_MM_dd.log, yyyy_MM_dd is the year, month and date when this application starts.
-Valid range: 0 - 3F (Hex, please do not include 0x)
-1  1 | 1  1  1  1
-|  |   |  |  |  |_ Log INFO messages
-|  |   |  |  |_ Log WARNING messages
-|  |   |  |_ Log ERROR messages
-|  |   |_ Log all printed out debug messages
-|  |_ Log DETECTION messages
-|_ Log BAN/UNBAN messages
---
-General.BanCmd - Command to execute during a detection
-Valid Range: (String) Any
-Use OFF or leave it empty to disable this feature
-WARNING:
-* Incorrect setting of this variable might result serious problem on your server
-* User that running this application must have privilege to execute the command, otherwise it will not work.
-
-Example:
-For Linux with iptables, you should use:
-General.BanCmd=iptables -A INPUT -s %ip -j DROP
-For Windows with Windows Firewall, you should use:
-General.BanCmd=PowerShell New-NetFirewallRule -DisplayName "Honey_Port_%ip" -Direction Inbound -Action Block -RemoteAddress %ip
-%ip will be replaced with detected IP on a detection
---
-General.BanLength - How long should the program keep the IP banned? (seconds)
-Valid Range: (Integer) 0 - max of Java int
-Use 0 to disable unban feature.
---
-General.UnbanCmd - Command to execute when a ban time is expired
-Valid Range: (String) Any
-Use OFF or leave it empty to disable this feature
-WARNING:
-* Incorrect setting of this variable might result serious problem on your server
-* User that running this application must have privilege to execute the command, otherwise it will not work.
-
-Example:
-For Linux with iptables, you should use:
-General.UnbanCmd=iptables -D INPUT -s %ip -j DROP
-For Windows with Windows Firewall, you should use:
-General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
-%ip will be replaced with detected IP on a detection
-
----Random Delay Disconnecting Time and Random Welcome Msg---
-FakeSrv.Enabled - Enable/Disable random delay timer and random welcome message
-Valid range: 0 or 1
---
-FakeSrv.RndDelayDisconnecting - Random delay time range (seconds)
-Valid range: (Integer) 0 - max of Java int
-I recommend not to exceed 10, connection should lost once your firewall bans the client IP. 
---
-FakeSrv.RndWelcomeMsgCount - How many random message do you have?
-Valid range: (Integer) 0 - max of Java int
-Use 0 to disable this feature.
---
-FakeSrv.RndWelcomeMsg.#.Type - Type of the welcome message
-Valid range: Name of Charset
-Please see http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html for list of charset.
-Use "Base64" encoding for non-human readable data.
---
-FakeSrv.RndWelcomeMsg.#.Content - Welcome message strings
-Valid range: String data or Base64 data
-Replace # with 1, 2, 3, 4...
-This string or base64 data will be send to the client. Each port will randomly select a message and keep that message constant on the same port. 
-
----Port range listening specifications---
-PortRange.Start - Range of ports to be listened
-Valid range: (Integer) 1 - 65535, should also be less than or equal to PortRange.End
-Use -1 to turn this feature off
---
-PortRange.Start - Range of ports to be listened
-Valid range: (Integer) 1- 65535, should also be greater than or equal to PortRange.End
-Use -1 in PortRange.Start to turn this feature off
-
----Other ports that are not included in port range specifications---
-SpecPort.Count - How many additional port listeners do you need?
-Valid range: (Integer) 0 - 65535
-Use 0 to disable this feature
---
-SpecPort.# - Additional port number to listen
-Valid range: (Integer) 1 -65535
-Replace # with 1, 2, 3, 4...
-To disable this feature, set SpecPort.Count to 0
-For example:
-SpecPort.1=1111
-SpecPort.2=2222
-You can add more by using "SpecPort.3", "SpecPort.4"... You can add as many up to the number you specified in "SpecPort.Count". The number in between must be continuous.
-
----Exclude specified port---
-ExclPort.Count - How many ports you do not want this application to touch that are included in the range specification?
-Valid range: (Integer) 0 - 65535
-Use 0 to disable this feature
---
-ExclPort.# - Port number to exclude
-Valid range: (Integer) 1 - 65535
-Replace # with 1, 2, 3, 4...
-To disable this feature, set ExclPort.Count to 0
-For example:
-ExclPort.1=22
-ExclPort.2=80
-You can add more by using "ExclPort.3", "ExclPort.4"... You can add as many up to the number you specified in "ExclPort.Count". The number in between must be continuous.
-
-Note: Port that are in use will be automatically skipped as well.
-
----IP White listing---
-IPWhiteList.Count - How many IPs would you like to keep them in white list? Ban and unban cmd will be exclude for those IP address
-Valid range: (Integer) 0 to inf
-Use 0 to disable this feature
---
-IPWhiteList.# - Specified IP address
-Valid range: IPv4 address
-To disable this feature, set IPWhiteList.Count to 0
-For example:
-IPWhiteList.1=127.0.0.1
-IPWhiteList.2=192.168.0.1
-You can add more by using "IPWhiteList.3", "IPWhiteList.4"... You can add as many up to the number you specified in "IPWhiteList.Count". The number in between must be continuous.
-It is strongly suggested to keep 127.0.0.1 and the external IP address for the current machine inside this list.
+See Settings.conf for available options.
 
 --------------------------------
-An example of a Settings.conf file
---------------------------------
-# Control addition debug message from the program (0-2)
-Program.Debug=1
-# Keep the following false if using Windows, you may set it to true if using Linux
-Program.UseColorCode=False
-# Log detection to file or not [Use hex]
-Program.LogLevel=20
-
-# Enable the following lines by removing '#' at the front if running on a Windows machine with Windows Firewall
-# General.BanCmd=PowerShell New-NetFirewallRule -DisplayName "Honey_Port_%ip" -Direction Inbound -Action Block -RemoteAddress %ip
-# General.UnbanCmd=PowerShell Remove-NetFirewallRule -DisplayName "Honey_Port_%ip"
-
-# Enable the following lines by removing '#' at the front if running on a Linux machine with iptables
-# General.BanCmd=iptables -A INPUT -s %ip -j DROP
-# General.UnbanCmd=iptables -D INPUT -s %ip -j DROP
-
-# Enable the following lines by removing '#' at the front if you do not want to use ban features
-# General.BanCmd=OFF
-# General.UnbanCmd=OFF
-
-# For 3rd party firewall, please setup the commands according to your firewall guide
-
-# Ban length in seconds (Use 0 to disable unban)
-General.BanLength=3600
-
-# Random delay disconnecting timer and random welcome message settings
-FakeSrv.Enabled=1
-FakeSrv.RndDelayDisconnecting=1
-FakeSrv.RndWelcomeMsgCount=2
-FakeSrv.RndWelcomeMsg.1.Type=ASCII
-FakeSrv.RndWelcomeMsg.1.Content=SSH-2.0-OpenSSH_5.3\n
-FakeSrv.RndWelcomeMsg.2.Type=Base64
-FakeSrv.RndWelcomeMsg.2.Content=OAAAAAo1LjEuNTYtbG9nALA9VwJCIXpndz90SQD/9wgCAAAAAAAAAAAAAAAAAABSPiItXGhzLSRscnkA
-
-# Port range to use as honey ports
-PortRange.Start=60000
-PortRange.End=60010
-
-# Other ports other than included in honey port to be use as honey ports
-SpecPort.Count=0
-SpecPort.1=0
-
-# Excluding ports from being use as a honey port
-ExclPort.Count=0
-ExclPort.1=0
-
-# IP whitelist, BanCmd and UnbanCmd will not be execute on those IPs.
-IPWhiteList.Count=1
-IPWhiteList.1 = 127.0.0.1
-
---------------------------------
-Here is a sample output data from NMAP targeting a Windows 10 Technical Preview machine with Honey Port running.
+NMAP Scanning Output Example:
+NMAP targeting a Windows 10 Technical Preview machine with Honey Port running.
 ----------------------------------------
 17818/tcp open  unknown
 17819/tcp open  http       Apache httpd

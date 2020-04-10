@@ -1,5 +1,37 @@
 ----------------------------------------
-Version: 0.1.10 - 2015-09-23
+Version: 1.0.0 - 2020-04-10
+----------------------------------------
+1. Refactored and restured majority of the code.
+2. Removed 'Queue' data structure.
+3. Changed structure of configuration file (Settings.conf).
+    * No more shortcuts in property naming.
+    * Removed count requirement for specific ports, excluded ports and whitelisted IPs.
+    * Moved configuration documentation from ReadMe.txt to configuration file.
+4. Added 'Logs' folder for log files.
+
+Added:
+1. Shutdown hooks for clean shutdown.
+2. Added additional commands:
+    !h - Display help.
+    !c - Display current loaded configuration.
+    !p - List of ports that are being listened.
+    !s - Shutdown an open port. For example:
+            !s 36478
+    !w - List of whitelisted IP addresses.
+    !b - List of banned IP addresses.
+    !u - Unban a banned IP address. For example:
+            !u 192.168.126.75
+    !r - Reload the application. This will reset everything.
+    !s - Shutdown the application.
+
+Fixed:
+1. Fixed IP whitelist comparison issue. Using InetAddress to compare objects instead of String.
+2. 'Integer' in ban length. Now it is 'Long' type.
+3. Null Pointer Exception when user entered command size is different than expected.
+4. Inefficient loops to compare lists of data.
+
+----------------------------------------
+Version: 0.1.10R - 2015-09-23
 ----------------------------------------
 Changed:
 1. Structure of the ReadMe.txt file
@@ -9,50 +41,33 @@ Version: 0.1.10 - 2015-01-22
 ----------------------------------------
 Added:
 1. Random welcome message now supports different encoding types.
-*. Non-ASCII and non-base64 encoding might not fully supported yet. Use base64 encoding if needed.
+    * Note: Did not test encodings other than 'Base64' and "ASCII"
 2. Use of synchronized in some function and removed mutex.
 
 Fixed:
-1. Duplicated bans on a single IP when unban is off
-
-Here is a sample output data from NMAP targeting a Windows 10 Technical Preview machine with Honey Port running.
-----------------------------------------
-17818/tcp open  unknown
-17819/tcp open  http       Apache httpd
-17820/tcp open  tcpwrapped
-17821/tcp open  unknown
-17822/tcp open  mysql      MySQL 5.6.19-0ubuntu0.14.04.1
-17823/tcp open  unknown
-17824/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
-17825/tcp open  ssh        OpenSSH 5.3 (protocol 2.0)
-17826/tcp open  unknown
-
-Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
-Device type: specialized|WAP|phone
-Running: iPXE 1.X, Linksys Linux 2.4.X, Linux 2.6.X, Sony Ericsson embedded
-OS CPE: cpe:/o:ipxe:ipxe:1.0.0%2b cpe:/o:linksys:linux_kernel:2.4 cpe:/o:linux:linux_kernel:2.6 cpe:/h:sonyericsson:u8i_vivaz
-OS details: iPXE 1.0.0+, Tomato 1.28 (Linux 2.4.20), Tomato firmware (Linux 2.6.22), Sony Ericsson U8i Vivaz mobile phone
+1. Duplicated bans on a single IP when unban is off.
 
 ----------------------------------------
 Version: 0.1.9 - 2015-01-21
 ----------------------------------------
 Added:
 1. Random welcome message.
-2. Random disconnect time delay (Firewall might interrupt the connection first).
+2. Random disconnect delay time (Firewall can still interrupt the connection).
 3. New settings in config file for above features.
-* Main goal for this update is to confuse nmap port/service scan, as well as OS detection.
-* Nmap will display "TCPWrapper" for all honey ports in the previous versions.
+    * Main goal for this update is to confuse nmap port/service scan and OS detection.
+    * Nmap will display "TCPWrapper" for all honey ports in the previous versions.
+    * See "ReadMe.txt" file to see an example output from nmap after this update.
 
 ----------------------------------------
 Version: 0.1.8 - 2015-01-18
 ----------------------------------------
 Fixed:
-1. Nullpointer exception when trying to execute ban command with unban off.
+1. Null Pointer Exception when trying to execute ban command with unban off.
 
 ----------------------------------------
 Version: 0.1.7.1 - 2014-11-10
 ----------------------------------------
-Minor Refactoring.
+1. Minor Refactoring.
 
 ----------------------------------------
 Version: 0.1.7 - 2014-11-08
@@ -65,15 +80,16 @@ Enhanced:
 2. Search banned list algorithm.
 
 Fixed:
-1. Nullpointer exception if "General.BanCmd" is not being set-up correctly.
-2. Unnecessary exception message during shutdown for ports that were closed during run time.
+1. Null Pointer Exception if "General.BanCmd" is not being set-up correctly.
+2. An unnecessary exception message during shutdown for ports that were closed during run time.
 
-Configuration file removed "Program.LogToFile" and added "Program.LogLevel". Please use the read me file to set-up this variable.
+Other:
+1. Configuration file removed "Program.LogToFile" and added "Program.LogLevel". Please use the read me file to set-up this variable.
 ----------------------------------------
 Version: 0.1.6  - 2014-11-05
 ----------------------------------------
 Added:
-1. Remove all banned IP on program close.
+1. Remove all banned IP upon application shutdown.
 2. Auto flush to file writer for log file.
 3. Windows Firewall PS commands to read me file.
 4. This change log file.
@@ -112,9 +128,9 @@ Fixed:
 ----------------------------------------
 Version: 0.1.2 - 2014-09-29
 ----------------------------------------
-Fixed Color Code issue on Windows. User can choose to enable this feature or not. 
+1. Fixed Color Code issue on Windows. User can choose to enable this feature or not. 
 
 ----------------------------------------
 Version: 0.1.1 - 2014-09-29
 ----------------------------------------
-Initial Commit. Most functions are finished. Still require some testing. 
+1. Initial testing release. Most features are finished. Still require some testing. 

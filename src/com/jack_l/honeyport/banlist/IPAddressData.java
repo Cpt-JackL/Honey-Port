@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Jack L (http://jack-l.com)
+ * Copyright (C) 2020 Jack L (http://jack-l.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package com.jack_l.honeyport.banlist;
+
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+import java.net.InetAddress;
+
 /**
- *
- * @author Jack L (http://jack-l.com)
+ * Data structure that holds an IP address and an expire timer
  */
-//Queue linked list
-public class QueueLL<D> {
+@Getter
+@AllArgsConstructor
+@EqualsAndHashCode
+public class IPAddressData {
+    private final InetAddress ipAddress;
+    private final long expireTime;
 
-    protected D Data;
-    protected QueueLL Next;
-    protected QueueLL Prev;
-
-    public QueueLL(D Data, QueueLL Next, QueueLL Prev) { //Constructor
-        this.Data = Data;
-        this.Next = Next;
-        this.Prev = Prev;
+    public InetAddress getInetAddress() {
+        return ipAddress;
     }
 }

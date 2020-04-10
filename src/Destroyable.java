@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Jack L (http://jack-l.com)
+ * Copyright (C) 2020 Jack L (http://jack-l.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,21 +16,8 @@
  */
 
 /**
- *
- * @author Jack L (http://jack-l.com)
+ * An interface to indicates that the object needs to be explicitly destroyed instead of just setting to null
  */
-public class BannedIPData {
-
-    public String IPAddr;
-    public long ExpireTime;
-
-    public BannedIPData(String InIP, long ExpTime) {
-        IPAddr = InIP;
-        ExpireTime = ExpTime;
-    }
-
-    @Override
-    public String toString() {
-        return IPAddr;
-    }
+public interface Destroyable {
+    public void destroy();
 }

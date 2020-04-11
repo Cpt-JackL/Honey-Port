@@ -62,8 +62,7 @@ public class HoneyPort {
             printMessage((byte) 0x00, "Welcome use Honey Port.");
             printMessage((byte) 0x00, "Original Author: Jack L (http://jack-l.com)");
             printMessage((byte) 0x00, "Version: " + SharedRuntimeVariables.version);
-            printMessage((byte) 0x01, "This program is released under GNU General Public License v3");
-            printMessage((byte) 0x01, "This program is still under Beta testing stage.");
+            printMessage((byte) 0x00, "This program is released under GNU General Public License v3");
             printMessage((byte) 0x00, "-----------------------------------------");
 
             // Initialize objects

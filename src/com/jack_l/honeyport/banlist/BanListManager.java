@@ -84,8 +84,8 @@ public class BanListManager implements Destroyable {
                             final IPAddressData ipData = bannedIps.values().toArray(new IPAddressData[0])[0];
                             if (ipData.getExpireTime() <= new Date().getTime()) {
                                 printMessage((byte) 0x00, "IP '" + ipData.getIpAddress().getHostAddress() + "' ban time has expired.");
-                                removeBan(ipData);
-                                // Do not delay here, in case multiple IPs are being unbanned
+                                removeBan(ipData, true);
+                                // Do not delay here, multiple IPs could be added at the same time
                                 sleep = false;
                             }
                         }
@@ -172,12 +172,13 @@ public class BanListManager implements Destroyable {
     private void removeAllBans() {
         synchronized (dataSafetyLock) {
             if (bannedIps != null) {
-                final int bannedIpSize = bannedIps.size();
                 for (IPAddressData ipData : bannedIps.values()) {
-                    removeBan(ipData);
+                    removeBan(ipData, false);
                 }
-                if (bannedIpSize > 0) {
+                if (bannedIps.size() <= 0) {
                     printMessage((byte) 0x05, "All bans are removed.");
+                } else {
+                    printMessage((byte) 0x01, "Failed to remove " + bannedIps.size() + " IPs from ban list.");
                 }
             }
         }
@@ -193,7 +194,7 @@ public class BanListManager implements Destroyable {
                     final InetAddress inetIpAddress = InetAddress.getByName(ipAddress);
                     final IPAddressData ipData = bannedIps.get(inetIpAddress.getHostAddress());
                     if (ipData != null) {
-                        removeBan(ipData);
+                        removeBan(ipData, false);
                     } else {
                         printMessage((byte) 0x01, "Failed to unban IP: " + ipAddress + ". (No such IP in ban list)");
                     }
@@ -206,17 +207,22 @@ public class BanListManager implements Destroyable {
         }
     }
 
-    private void removeBan(final IPAddressData ipData) {
+    private void removeBan(final IPAddressData ipData, final boolean isRequestedFromAutoBan) {
         synchronized (dataSafetyLock) {
             if (bannedIps != null) {
                 String exeCmd = configuration.getUnbanCmd().replaceAll("%ip", ipData.getInetAddress().getHostAddress());
                 try {
                     printMessage((byte) 0x10, "Executing cmd: " + exeCmd);
                     Runtime.getRuntime().exec(exeCmd);
-                    bannedIps.remove(ipData.getIpAddress());
+                    bannedIps.remove(ipData.getIpAddress().getHostAddress());
                     printMessage((byte) 0x05, "Unbanned IP: " + ipData.getIpAddress().getHostAddress());
                 } catch (Exception e) {
                     printMessage((byte) 0x01, "Failed to execute command: " + exeCmd + ". (Exception: " + e + ")");
+                } finally {
+                    // If the request is from auto ban, remove the IP from the list regardless, otherwise this will end up in an infinite loop
+                    if (isRequestedFromAutoBan && bannedIps.containsKey(ipData.getIpAddress().getHostAddress())) {
+                        bannedIps.remove(ipData.getIpAddress().getHostAddress());
+                    }
                 }
             } else {
                 printMessage((byte) 0x01, "Failed to unban IP. (Ban list did not initialized)");

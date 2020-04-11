@@ -91,6 +91,7 @@ Fixed:
 
 Other:
 1. Configuration file removed "Program.LogToFile" and added "Program.LogLevel". Please use the read me file to set-up this variable.
+
 ----------------------------------------
 Version: 0.1.6  - 2014-11-05
 ----------------------------------------

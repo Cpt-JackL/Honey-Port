@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat;
 
 public class SharedRuntimeVariables {
     // Constants
-    public final static String version = "1.0.2";
+    public final static String version = "1.0.3";
     public final static SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     private static CachedConfigurationValues currentCachedConfigurationData = null;

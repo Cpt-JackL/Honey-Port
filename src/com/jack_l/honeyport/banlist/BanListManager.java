@@ -172,9 +172,8 @@ public class BanListManager implements Destroyable {
     private void removeAllBans() {
         synchronized (dataSafetyLock) {
             if (bannedIps != null) {
-                //Must use iterator here, because we are removing data at the same time
-                for (final Iterator<IPAddressData> ipDataIterator = bannedIps.values().iterator(); ipDataIterator.hasNext(); ) {
-                    final IPAddressData ipData = ipDataIterator.next();
+                //Must use a different array here, otherwise could cause concurrent modification exception
+                for (final IPAddressData ipData : bannedIps.values().toArray(new IPAddressData[0])) {
                     removeBan(ipData, false);
                 }
                 if (bannedIps.size() <= 0) {
@@ -222,7 +221,7 @@ public class BanListManager implements Destroyable {
                     printMessage((byte) 0x01, "Failed to execute command: " + exeCmd + ". (Exception: " + e + ")");
                 } finally {
                     // If the request is from auto ban, remove the IP from the list regardless, otherwise this will end up in an infinite loop
-                    if (isRequestedFromAutoBan && bannedIps.containsKey(ipData.getIpAddress().getHostAddress())) {
+                    if (isRequestedFromAutoBan) {
                         bannedIps.remove(ipData.getIpAddress().getHostAddress());
                     }
                 }

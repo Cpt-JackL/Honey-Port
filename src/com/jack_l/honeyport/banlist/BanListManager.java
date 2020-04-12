@@ -147,7 +147,7 @@ public class BanListManager implements Destroyable {
                 printMessage((byte) 0x05, "Banned IP: " + remoteIp);
 
                 if (bannedIps != null) {
-                    final IPAddressData newBannedIp = new IPAddressData(inetRemoteAddress, new Date().getTime() + configuration.getBanLength() * 1000);
+                    final IPAddressData newBannedIp = new IPAddressData(inetRemoteAddress, new Date().getTime() + configuration.getBanLength() * 1000L);
                     bannedIps.put(remoteIp, newBannedIp);
                 }
             }
@@ -172,7 +172,9 @@ public class BanListManager implements Destroyable {
     private void removeAllBans() {
         synchronized (dataSafetyLock) {
             if (bannedIps != null) {
-                for (IPAddressData ipData : bannedIps.values()) {
+                //Must use iterator here, because we are removing data at the same time
+                for (final Iterator<IPAddressData> ipDataIterator = bannedIps.values().iterator(); ipDataIterator.hasNext(); ) {
+                    final IPAddressData ipData = ipDataIterator.next();
                     removeBan(ipData, false);
                 }
                 if (bannedIps.size() <= 0) {

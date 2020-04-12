@@ -82,7 +82,7 @@ public class ConfigurationFileReader {
             configurationCacheBuilder.banCmd(banCmd);
             final String unbanCmd = configurationFilePropertyReader.getProperty("General.UnbanCommand");
             configurationCacheBuilder.unbanCmd(unbanCmd);
-            configurationCacheBuilder.banLength(Integer.parseInt(configurationFilePropertyReader.getProperty("General.BanLength")));
+            configurationCacheBuilder.banLength(Long.parseLong(configurationFilePropertyReader.getProperty("General.BanLength")));
             configurationCacheBuilder.portRangeStart(Integer.parseInt(configurationFilePropertyReader.getProperty("PortRange.Start")));
             configurationCacheBuilder.portRangeEnd(Integer.parseInt(configurationFilePropertyReader.getProperty("PortRange.End")));
 
@@ -104,7 +104,6 @@ public class ConfigurationFileReader {
                     configurationCacheBuilder.randomWelcomeMessageType(randomWelcomeMessageType);
                     configurationCacheBuilder.randomWelcomeMessage(randomWelcomeMessage);
                 }
-
             }
 
             // Specific ports

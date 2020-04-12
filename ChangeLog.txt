@@ -1,4 +1,11 @@
 ----------------------------------------
+Version: 1.0.1 - 2020-04-12
+----------------------------------------
+Fixed:
+1. Concurrent Modification Exception while clean up banned list.
+2. Ban length did not use "Long" after all, until this version.
+
+----------------------------------------
 Version: 1.0.1 - 2020-04-10
 ----------------------------------------
 Fixed:
@@ -8,12 +15,12 @@ Fixed:
 Version: 1.0.0 - 2020-04-10
 ----------------------------------------
 1. Refactored and restructured majority of the code.
-2. Removed 'Queue' data structure.
+2. Removed "Queue" data structure.
 3. Changed structure of configuration file (Settings.conf).
     * No more shortcuts in property naming.
     * Removed count requirement for specific ports, excluded ports and whitelisted IPs.
     * Moved configuration documentation from ReadMe.txt to configuration file.
-4. Added 'Logs' folder for log files.
+4. Added "Logs" folder for log files.
 
 Added:
 1. Shutdown hooks for clean shutdown.
@@ -32,7 +39,7 @@ Added:
 
 Fixed:
 1. Fixed IP whitelist comparison issue. Using InetAddress to compare objects instead of String.
-2. 'Integer' in ban length. Now it is 'Long' type.
+2. "Integer" in ban length. Now it is "Long" type. (This is actually fixed in 1.0.2 instead.)
 3. Null Pointer Exception when user entered command size is different than expected.
 4. Inefficient loops to compare lists of data.
 
@@ -47,7 +54,7 @@ Version: 0.1.10 - 2015-01-22
 ----------------------------------------
 Added:
 1. Random welcome message now supports different encoding types.
-    * Note: Did not test encodings other than 'Base64' and "ASCII"
+    * Note: Did not test encodings other than "Base64" and "ASCII"
 2. Use of synchronized in some function and removed mutex.
 
 Fixed:

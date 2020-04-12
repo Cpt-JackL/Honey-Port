@@ -78,7 +78,7 @@ public class CachedConfigurationValues {
      * permanently
      */
     @Builder.Default
-    private int banLength = 0;
+    private long banLength = 0;
 
     /**
      * Fake Server welcome message

@@ -34,7 +34,7 @@ public class ConfigurationFileReader {
     /**
      * Reads the file and cache into configuration object
      */
-    public static CachedConfigurationValues loadConfigurationsToCache() throws ConfigurationExceptions {
+    public static CachedConfigurationValues loadConfigurations() throws ConfigurationExceptions {
         final String readFileErrorMessage = "Failed to read configuration file. (%s)";
         final CachedConfigurationValues.CachedConfigurationValuesBuilder configurationCacheBuilder = CachedConfigurationValues.builder();
         final CachedConfigurationValues.ConsoleConfigurationValues.ConsoleConfigurationValuesBuilder consoleConfigurationCacheBuilder = CachedConfigurationValues.ConsoleConfigurationValues.builder();

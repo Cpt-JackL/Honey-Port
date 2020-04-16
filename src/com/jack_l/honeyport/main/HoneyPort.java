@@ -1,4 +1,4 @@
-/*
+package com.jack_l.honeyport.main;/*
  * Copyright (C) 2014-2020 Jack L (http://jack-l.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ public class HoneyPort {
             // Load, validate and apply configuration
             boolean configurationApplied;
             try {
-                configurationApplied = ConfigurationFileReader.validSettingsAndSetActive(ConfigurationFileReader.loadConfigurationsToCache());
+                configurationApplied = ConfigurationFileReader.validSettingsAndSetActive(ConfigurationFileReader.loadConfigurations());
             } catch (final ConfigurationExceptions e) {
                 configurationApplied = false;
             }

@@ -31,32 +31,6 @@ import java.util.Set;
 @EqualsAndHashCode
 @ToString
 public class CachedConfigurationValues {
-
-    @Builder
-    @Getter
-    @EqualsAndHashCode
-    @ToString
-    public static class ConsoleConfigurationValues {
-        /**
-         * UseColorCode - Display message with color or not
-         */
-        @Builder.Default
-        private boolean useColorCode = false;
-
-        /**
-         * DebugLevel - Controls how much debug message is being output and log 0000
-         * (0x0) - OFF 0001 (0x1) - General 0010 (0x2) - Detailed
-         */
-        @Builder.Default
-        private byte debugLevel = 0x1;
-
-        /**
-         * Variable: LogToFile - Log detections to file
-         */
-        @Builder.Default
-        private Byte logLevel = 0x0; //Default must be off
-    }
-
     private ConsoleConfigurationValues consoleConfigurations;
 
     /**
@@ -106,6 +80,31 @@ public class CachedConfigurationValues {
 
     @Builder.Default
     private Set<InetAddress> ipWhiteList = new HashSet<>();
+
+    @Builder
+    @Getter
+    @EqualsAndHashCode
+    @ToString
+    public static class ConsoleConfigurationValues {
+        /**
+         * UseColorCode - Display message with color or not
+         */
+        @Builder.Default
+        private boolean useColorCode = false;
+
+        /**
+         * DebugLevel - Controls how much debug message is being output and log 0000
+         * (0x0) - OFF 0001 (0x1) - General 0010 (0x2) - Detailed
+         */
+        @Builder.Default
+        private byte debugLevel = 0x1;
+
+        /**
+         * Variable: LogToFile - Log detections to file
+         */
+        @Builder.Default
+        private Byte logLevel = 0x0; //Default must be off
+    }
 
     public boolean isThisCurrentlyActiveConfiguration() {
         return SharedRuntimeVariables.getCurrentCachedConfiguration().equals(this);

@@ -28,15 +28,18 @@ import static com.jack_l.honeyport.console.LoggingHandler.writeLog;
  * Handles output to console
  */
 public class ConsoleHandler {
+    /*
+     * Console color codes, some colors are commented out because no usage currently. Reserved for future usage.
+     */
     private static final String C_RESET = "\u001B[0m";
-    private static final String C_BLACK = "\u001B[30m";
+    //private static final String C_BLACK = "\u001B[30m";
     private static final String C_RED = "\u001B[31m";
-    private static final String C_GREEN = "\u001B[32m";
+    //private static final String C_GREEN = "\u001B[32m";
     private static final String C_YELLOW = "\u001B[33m";
-    private static final String C_BLUE = "\u001B[34m";
+    //private static final String C_BLUE = "\u001B[34m";
     private static final String C_PURPLE = "\u001B[35m";
     private static final String C_CYAN = "\u001B[36m";
-    private static final String C_WHITE = "\u001B[37m";
+    //private static final String C_WHITE = "\u001B[37m";
 
     /**
      * Print message by using system current setting

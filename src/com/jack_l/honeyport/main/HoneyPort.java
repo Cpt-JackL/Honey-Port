@@ -87,10 +87,12 @@ public class HoneyPort {
                 banList = null;
                 printMessage((byte) 0x00, "All current setting unloaded, restarting...");
                 if (configuration.getConsoleConfigurations().isUseColorCode()) {
-                    System.out.print("\033[H\033[2J"); // Clear console
+                    // Clear console
+                    System.out.print("\033[H\033[2J");
                 }
             }
         } while (reload);
+        // Must use System.exit() here because of shutdown hooks.
         System.exit(0);
     }
 

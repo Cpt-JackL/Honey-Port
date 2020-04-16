@@ -165,7 +165,7 @@ public class SocketManager implements Destroyable {
     /**
      * Unexpected shutdown of a port, force Exception as an argument to ensure this function being abused.
      */
-    void removePortFromSocketList(final int port, final Exception e) {
+    protected void removePortFromSocketList(final int port, final Exception e) {
         sockets.remove(port);
     }
 }

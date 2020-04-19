@@ -77,22 +77,26 @@ public class BanListManager implements Destroyable {
         return new Thread(() -> {
             try {
                 while (bannedIps != null) {
-                    boolean sleep = true;
+                    long nextAwakeTime = 3000;
                     synchronized (dataSafetyLock) {
                         if (!bannedIps.isEmpty()) {
                             // Use peak to check if exp
-                            final IPAddressData ipData = bannedIps.values().toArray(new IPAddressData[0])[0];
-                            if (ipData.getExpireTime() <= new Date().getTime()) {
-                                printMessage((byte) 0x00, "IP '" + ipData.getIpAddress().getHostAddress() + "' ban time has expired.");
-                                removeBan(ipData, true);
-                                // Do not delay here, multiple IPs could be added at the same time
-                                sleep = false;
+                            final IPAddressData[] ipData = bannedIps.values().toArray(new IPAddressData[0]);
+                            if (ipData[0].getExpireTime() <= System.currentTimeMillis()) {
+                                printMessage((byte) 0x00, "IP '" + ipData[0].getIpAddress().getHostAddress() + "' ban time has expired.");
+                                removeBan(ipData[0], true);
+                                if (ipData.length > 1) {
+                                    nextAwakeTime = ipData[1].getExpireTime() - System.currentTimeMillis();
+                                }
+                            } else {
+                                // This works as long as the user cannot alter ban length
+                                // If the first IP in the list is removed, the expiry time of the next IP in the list is always later than the removed one.
+                                nextAwakeTime = ipData[0].getExpireTime() - System.currentTimeMillis();
                             }
                         }
                     }
-                    if (sleep) {
-                        Thread.sleep(1000);
-                    }
+                    printMessage((byte) 0x20, "Auto unban finished an execution and it is sleeping for: " + (nextAwakeTime) + "ms.");
+                    Thread.sleep(nextAwakeTime);
                 }
             } catch (final InterruptedException e) {
                 printMessage((byte) 0x10, "Auto unban timer is shutting down.");
@@ -147,7 +151,7 @@ public class BanListManager implements Destroyable {
                 printMessage((byte) 0x05, "Banned IP: " + remoteIp);
 
                 if (bannedIps != null) {
-                    final IPAddressData newBannedIp = new IPAddressData(inetRemoteAddress, new Date().getTime() + configuration.getBanLength() * 1000L);
+                    final IPAddressData newBannedIp = new IPAddressData(inetRemoteAddress, System.currentTimeMillis() + configuration.getBanLength() * 1000L);
                     bannedIps.put(remoteIp, newBannedIp);
                 }
             }

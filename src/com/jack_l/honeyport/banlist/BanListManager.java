@@ -22,7 +22,8 @@ import com.jack_l.honeyport.configuration.CachedConfigurationValues;
 import javax.security.auth.Destroyable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static com.jack_l.honeyport.console.ConsoleHandler.printMessage;
 
@@ -95,8 +96,12 @@ public class BanListManager implements Destroyable {
                             }
                         }
                     }
-                    printMessage((byte) 0x20, "Auto unban finished an execution and it is sleeping for: " + (nextAwakeTime) + "ms.");
-                    Thread.sleep(nextAwakeTime);
+                    if (nextAwakeTime > 0) {
+                        printMessage((byte) 0x20, "Auto unban finished an execution and it is sleeping for: " + nextAwakeTime + "ms.");
+                        Thread.sleep(nextAwakeTime);
+                    } else {
+                        printMessage((byte) 0x20, "Auto unban finished an execution and it will execute the next one immediately. Time difference: " + nextAwakeTime + "ms.");
+                    }
                 }
             } catch (final InterruptedException e) {
                 printMessage((byte) 0x10, "Auto unban timer is shutting down.");

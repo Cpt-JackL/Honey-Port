@@ -35,72 +35,78 @@ import static com.jack_l.honeyport.console.ConsoleHandler.printMessage;
  */
 @AllArgsConstructor
 public class KeyboardInputHandler {
+    private static final Scanner keyboardScanner = new Scanner(System.in);
     private final CachedConfigurationValues configuration;
     private final BanListManager banList;
     private final SocketManager socketManager;
 
     /**
+     * Closes scanner object, should only be called at shutdown
+     */
+    public static void closeScanner() {
+        keyboardScanner.close();
+    }
+
+    /**
      * Returns false to exit the app and true for reload, otherwise this thread will stay in this infinite loop
      */
     public boolean keyboardControl() {
-        try (final Scanner keyboardScanner = new Scanner(System.in)) {
-            String keyboardInputString;
-            printMessage((byte) 0x00, "Enter '!h' to see a list of commands.");
-            do {
-                try {
-                    keyboardInputString = keyboardScanner.nextLine();
-                } catch (final NoSuchElementException e) {
-                    printMessage((byte) 0x01, "Keyboard handler failed. (Exception: " + e + ")");
-                    return false;
-                }
-                printMessage((byte) 0x10, "Key '" + keyboardInputString + "' detected.");
+        String keyboardInputString;
+        printMessage((byte) 0x00, "Enter '!h' to see a list of commands.");
+        do {
+            try {
+                keyboardInputString = keyboardScanner.nextLine();
+            } catch (final NoSuchElementException e) {
+                printMessage((byte) 0x01, "Keyboard handler failed. (Exception: " + e + ")");
+                return false;
+            }
+            printMessage((byte) 0x10, "Key '" + keyboardInputString + "' detected.");
 
-                if (keyboardInputString.length() >= 2) {
-                    if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!h")) {
-                        // !h command
-                        printHelp();
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!c")) {
-                        // !c command
-                        printCurrentConfiguration();
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!p")) {
-                        // !p command
-                        listListeningPorts();
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!s")) {
-                        // !s command
-                        try {
-                            shutdownSinglePort(Integer.parseInt(keyboardInputString.substring(3)));
-                        } catch (Exception e) {
-                            printMessage((byte) 0x01, "Incorrect command format. Example: !s 36478");
-                        }
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!w")) {
-                        // !w command
-                        listWhitelistedIps();
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!b")) {
-                        // !b command
-                        listBannedIpAddresses();
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!u")) {
-                        // !u command
-                        try {
-                            unbanIpAddress(keyboardInputString.substring(3));
-                        } catch (Exception e) {
-                            printMessage((byte) 0x01, "Incorrect command format. Example: !u 192.168.126.75");
-                        }
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!r")) {
-                        // !r command
-                        return true;
-                    } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!q")) {
-                        // !q command
-                        return false;
-                    } else {
-                        printMessage((byte) 0x01, "Unknown command: " + keyboardInputString);
+            if (keyboardInputString.length() >= 2) {
+                if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!h")) {
+                    // !h command
+                    printHelp();
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!c")) {
+                    // !c command
+                    printCurrentConfiguration();
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!p")) {
+                    // !p command
+                    listListeningPorts();
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!s")) {
+                    // !s command
+                    try {
+                        shutdownSinglePort(Integer.parseInt(keyboardInputString.substring(3)));
+                    } catch (Exception e) {
+                        printMessage((byte) 0x01, "Incorrect command format. Example: !s 36478");
                     }
-                } else if (keyboardInputString == "!EXCEPTION") {
-                    // Ignore
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!w")) {
+                    // !w command
+                    listWhitelistedIps();
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!b")) {
+                    // !b command
+                    listBannedIpAddresses();
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!u")) {
+                    // !u command
+                    try {
+                        unbanIpAddress(keyboardInputString.substring(3));
+                    } catch (Exception e) {
+                        printMessage((byte) 0x01, "Incorrect command format. Example: !u 192.168.126.75");
+                    }
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!r")) {
+                    // !r command
+                    return true;
+                } else if (keyboardInputString.substring(0, 2).equalsIgnoreCase("!q")) {
+                    // !q command
+                    return false;
                 } else {
                     printMessage((byte) 0x01, "Unknown command: " + keyboardInputString);
                 }
-            } while (true);
-        }
+            } else if (keyboardInputString == "!EXCEPTION") {
+                // Ignore
+            } else {
+                printMessage((byte) 0x01, "Unknown command: " + keyboardInputString);
+            }
+        } while (true);
     }
 
     private void printHelp() {

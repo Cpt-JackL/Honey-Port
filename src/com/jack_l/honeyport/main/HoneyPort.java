@@ -20,6 +20,7 @@ import com.jack_l.honeyport.configuration.CachedConfigurationValues;
 import com.jack_l.honeyport.configuration.ConfigurationExceptions;
 import com.jack_l.honeyport.configuration.ConfigurationFileReader;
 import com.jack_l.honeyport.configuration.SharedRuntimeVariables;
+import com.jack_l.honeyport.console.ConsoleHandler;
 import com.jack_l.honeyport.console.KeyboardInputHandler;
 import com.jack_l.honeyport.sockets.SocketManager;
 
@@ -100,6 +101,7 @@ public class HoneyPort {
         printMessage((byte) 0x10, "Initializing shutdown hook...");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             printMessage((byte) 0x00, "Shutdown signal detected. Destroying all resources...");
+            KeyboardInputHandler.closeScanner();
             if (socketManager != null) {
                 socketManager.destroy();
                 socketManager = null;

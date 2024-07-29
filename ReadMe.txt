@@ -52,14 +52,15 @@ We tested with 10000 threads on Windows Server 2012 with debug mode, CPU usage w
 We also tested 10000 threads on Linux, this reached number of threads allowance for each application. Will have to change this limitation for this many ports to run on Linux.
 
 --------------------------------
+Steps to run
+--------------------------------
+ 1. Edit "Setting.conf" file accordingly
+ 2. Run the JAR file in a console with command "java -jar Honey_Port.jar"
+
+--------------------------------
 Run time commands
 --------------------------------
 Use '!h' to see a list of possible commands.
-
---------------------------------
-Program Settings
---------------------------------
-See Settings.conf for available options.
 
 --------------------------------
 NMAP Scanning Output Example:
